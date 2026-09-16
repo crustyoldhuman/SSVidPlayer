@@ -39,7 +39,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 No installation, no build steps, and no server required.
 
-1. Download `SSVidPlayer.html` by going [here (github)](https://github.com/crustyoldhuman/SSVidPlayer/blob/main/SSVidPlayer.html) and click the small "Download raw file" icon in the top right of the code file
+1. Download `SSVidPlayer.html` by going to the [Release Page](https://github.com/crustyoldhuman/SSVidPlayer/blob/main/SSVidPlayer.html) under the newest version.
 2. Open `SSVidPlayer.html` in your browser of choice (Firefox/Chrome/Edge recommended for RTX VSR).
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
 4. (Optional) Drag and drop an `.srt` file to instantly load subtitles. Adjust timing with Sub-Sync controls.
