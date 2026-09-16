@@ -904,7 +904,7 @@
             updateSliderMax();
             
             const dpr = window.devicePixelRatio || 1;
-            const targetScale = (window.innerHeight * 0.75 * dpr) / nativeHeight;
+            const targetScale = (window.innerHeight * 0.70 * dpr) / nativeHeight;
             
             // Clamp the scale so it doesn't break the slider's min/max limits
             const clampedScale = Math.max(sizeSlider.min, Math.min(sizeSlider.max, targetScale)).toFixed(2);
