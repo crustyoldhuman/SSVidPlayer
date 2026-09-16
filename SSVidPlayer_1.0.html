@@ -305,7 +305,6 @@
                         <input type="range" id="subSizeSlider" min="0.5" max="3" step="0.1" value="1.00" style="width: 80px;">
                     </div>
                 </div>
-                <button id="btnCropToggle">Crop edges</button>
             </div>
             
             <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
@@ -316,6 +315,8 @@
                     <input type="range" id="glowSlider" min="1" max="100" value="75" style="width: 70px;" title="Glow Intensity">
                 </div>
             </div>
+
+            <button id="btnCropToggle">Crop edges</button>
         </div>
         <div class="crop-row" id="cropControls" style="display: none; gap: 20px; align-items: center; justify-content: center; width: 100%; flex-wrap: wrap;">
             <div class="ui-group">
@@ -709,11 +710,7 @@
                 subToast.classList.remove('hidden');
                 setTimeout(() => subToast.classList.add('hidden'), 2500);
 
-                // Short delay so browser registers the track before UI refresh
-                setTimeout(() => {
-                    subSelect.value = 'load'; // Forces auto-select of the new track
-                    updateSubtitleUI();
-                }, 50);
+                // (Browser addtrack event automatically handles UI refresh)
             };
             reader.readAsText(file);
         }
@@ -882,16 +879,16 @@
             this.blur();
         });
 
-        document.body.addEventListener('dragenter', function(event) { event.preventDefault(); });
-        document.body.addEventListener('dragover', function(event) {
+        window.addEventListener('dragenter', function(event) { event.preventDefault(); });
+        window.addEventListener('dragover', function(event) {
             event.preventDefault(); 
             document.body.classList.add('drag-over');
         });
-        document.body.addEventListener('dragleave', function(event) {
+        window.addEventListener('dragleave', function(event) {
             event.preventDefault();
             document.body.classList.remove('drag-over');
         });
-        document.body.addEventListener('drop', function(event) {
+        window.addEventListener('drop', function(event) {
             event.preventDefault();
             document.body.classList.remove('drag-over');
             if (event.dataTransfer.files.length > 0) {
@@ -970,7 +967,7 @@
         videoPlayer.addEventListener('error', function() {
             playOverlay.classList.remove('ready');
             playOverlay.classList.add('visible');
-            ambientVideo.classList.add('hidden');
+            ambientCanvas.classList.add('hidden');
             overlayContent.innerHTML = `
                 <div class="play-text" style="color: #ff5555;">Unsupported Format</div>
                 <div style="font-size: 14px; margin-top: 10px;">Your browser cannot play this file. Try an MP4 or WebM.</div>
@@ -978,10 +975,10 @@
         });
 
         function manageAmbientState() {
+        cancelAnimationFrame(ambientAnimId);
         if (!isAmbientEnabled || document.fullscreenElement) {
             ambientCanvas.classList.add('hidden');
             ambientCanvas.style.opacity = ''; // Clears inline style so CSS fade out works
-            cancelAnimationFrame(ambientAnimId);
         } else if (videoPlayer.readyState > 0) {
             ambientCanvas.classList.remove('hidden');
             ambientCanvas.style.opacity = glowSlider.value / 100;
@@ -1017,10 +1014,8 @@ function resizeAmbientCanvas() {
             const inset = 3;
             const srcX = cropLeftPx + inset;
             const srcY = cropTopPx + inset;
-            const srcW = nativeWidth - cropLeftPx - cropRightPx - (inset * 2);
-            const srcH = nativeHeight - cropTopPx - cropBotPx - (inset * 2);
-
-            if (srcW <= 0 || srcH <= 0) return;
+            const srcW = Math.max(1, nativeWidth - cropLeftPx - cropRightPx - (inset * 2));
+            const srcH = Math.max(1, nativeHeight - cropTopPx - cropBotPx - (inset * 2));
 
             // 2. Setup mapping to the oversized 120vw/120vh CSS canvas
             const cw = ambientCanvas.width;
@@ -1134,7 +1129,7 @@ function resizeAmbientCanvas() {
 
         playOverlay.addEventListener('click', function() {
             if (videoPlayer.readyState > 0) {
-                videoPlayer.play();
+                videoPlayer.play().catch(e => console.log("Playback interrupted"));
             }
         });
 
@@ -1158,7 +1153,7 @@ function resizeAmbientCanvas() {
         videoPlayer.addEventListener('click', function() {
             if (videoPlayer.readyState > 0) {
                 if (videoPlayer.paused) {
-                    videoPlayer.play();
+                    videoPlayer.play().catch(e => console.log("Playback interrupted"));
                     showIndicator(true);
                 } else {
                     videoPlayer.pause();
@@ -1185,7 +1180,7 @@ function resizeAmbientCanvas() {
         }
 
         btnPlayPause.addEventListener('click', () => {
-            if (videoPlayer.paused) videoPlayer.play();
+            if (videoPlayer.paused) videoPlayer.play().catch(e => console.log("Playback interrupted"));
             else videoPlayer.pause();
         });
 
@@ -1404,7 +1399,7 @@ function resizeAmbientCanvas() {
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (videoPlayer.paused && videoPlayer.readyState > 0) {
-                    videoPlayer.play();
+                    videoPlayer.play().catch(e => console.log("Playback interrupted"));
                 } else if (!videoPlayer.paused) {
                     videoPlayer.pause();
                 }
@@ -1416,7 +1411,9 @@ function resizeAmbientCanvas() {
         });
 
         function resetIdleTimer(e) {
-            document.body.style.cursor = 'default'; 
+            if (document.body.style.cursor !== 'default') {
+                document.body.style.cursor = 'default'; 
+            }
             clearTimeout(hideTimeout);
             
             const isTopCenterEdge = e && e.clientY <= 60 && e.clientX > window.innerWidth * 0.3 && e.clientX < window.innerWidth * 0.7;
