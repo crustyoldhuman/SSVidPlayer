@@ -1,6 +1,6 @@
 # SSVidPlayer (RTX Super Sampling Video Player)
 
-A lightweight, zero-dependency HTML5 video player designed to force native browser AI upscaling (like NVIDIA RTX Video Super Resolution) on your local video files. 
+A lightweight, zero-dependency HTML5 video player designed to apply native browser AI video upscaling (like NVIDIA RTX Video Super Resolution) to your local .mp4 files. 
 
 Standalone desktop media players like VLC often lack native support for modern GPU-accelerated video super sampling, or require complex plugins to get working. Web browsers, however, usually support AI upscaling natively. SSVidPlayer wraps your local media in a highly customizable HTML environment, allowing you to scale and crop videos while taking advantage of the AI upscaling your GPU loves to do, all while remaining entirely local and privacy-respecting. 
 
@@ -46,6 +46,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 2. Open `SSVidPlayer.html` in your browser of choice (Firefox/Chrome/Edge recommended for RTX VSR).
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
 4. (Optional) Drag and drop an `.srt` file to instantly load subtitles. Adjust timing with Sub-Sync controls.
+5. .MP4 FILES ARE HEAVILY SUGGESTED. You may get mixed results with other filetypes depending how they were encoded, but all .mp4s should work. 
 
 ## Shortcuts & Controls
 
