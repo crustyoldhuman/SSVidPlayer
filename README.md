@@ -2,9 +2,7 @@
 
 # SSVidPlayer (RTX Super Sampling Video Player)
 
-A lightweight, zero-dependency HTML5 video player designed to apply native browser AI video upscaling (like NVIDIA RTX Video Super Resolution) to your local `.mp4` files. 
-
-Standalone desktop media players like VLC often lack native support for modern GPU-accelerated video super sampling, or require complex plugins to get working. Web browsers, however, usually support AI upscaling natively. And since it all exists within a single offline HTML file, it does it all while remaining entirely local and privacy-respecting. 
+A lightweight, zero-dependency HTML5 video player designed to apply native browser AI video upscaling (like NVIDIA RTX Video Super Resolution) to your local `.mp4` files, all while remaining entirely local and privacy-respecting. 
 
 <p align="center"><img width="900" alt="DefaultPageScreenie" src="https://github.com/user-attachments/assets/9c48b3db-a3ea-430c-8d4b-8549d1b6662b" /></p>
 
