@@ -10,7 +10,7 @@ A lightweight, zero-dependency HTML5 video player designed to apply native brows
 
 Trying to play upscaled local videos on Windows the way streaming videos upscale is a sh**show nightmare. Getting your $1000+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring bloated media players or obscure plugins that don't even end up working half the time.
 
-SSVidPlayer exists for one core purpose: **to make local video AI upscaling effortless.**
+SSVidPlayer exists for one core purpose: **to make local video AI upscaling easy.**
 
 By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the browser's native hardware upscaling and applies it to your local media just like it would a web stream. If your upscaling works on YouTube or other streaming videos, it will work on SSVidPlayer as well.
 
