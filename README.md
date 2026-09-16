@@ -1,9 +1,8 @@
 <p align="center"><img width="750" alt="Iconbanner" src="https://github.com/user-attachments/assets/54a82736-801a-472b-88cb-67d06329c777" /></p>
 
-
 # SSVidPlayer (RTX Super Sampling Video Player)
 
-A lightweight, zero-dependency HTML5 video player designed to apply native browser AI video upscaling (like NVIDIA RTX Video Super Resolution) to your local .mp4 files. 
+A lightweight, zero-dependency HTML5 video player designed to apply native browser AI video upscaling (like NVIDIA RTX Video Super Resolution) to your local `.mp4` files. 
 
 Standalone desktop media players like VLC often lack native support for modern GPU-accelerated video super sampling, or require complex plugins to get working. Web browsers, however, usually support AI upscaling natively. And since it all exists within a single offline HTML file, it does it all while remaining entirely local and privacy-respecting. 
 
@@ -27,10 +26,10 @@ All the other bells and whistles are just cherries on top of that core purpose.
 * **Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor.
 * **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and AI upscalers waste resources trying to process encoded black letterbox bars. SSVidPlayer lets you crop the edges in real-time to fix both of these problems.
 * **300% Audio Amplification:** Bypasses standard browser volume limits using the Web Audio API `GainNode`, allowing you to boost quiet audio tracks up to 3x (300%) their native volume.
-* **Smart Window Fitting:** A dedicated "Fit to Page" toggle that automatically calculates your viewport and scales the video to utilize the maximum available screen real estate without clipping.
+* **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your viewport and scales the video to utilize the maximum available screen real estate without clipping.
 * **Advanced Subtitle Engine:**
   * Drag-and-drop `.srt` support with on-the-fly `.vtt` conversion.
-  * Real-time Sub-Sync offset (click the +/- to flip the offset direction and fix out-of-sync text by the millisecond).
+  * Real-time **Sub-Sync** offset (click the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond).
   * Draggable subtitles (click and move text anywhere on the screen).
   * Adjustable subtitle font size.
 * **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters.
@@ -48,14 +47,14 @@ All the other bells and whistles are just cherries on top of that core purpose.
 1. Download `SSVidPlayer.html` by going to the [Release Page](https://github.com/crustyoldhuman/SSVidPlayer/releases) under the newest version.
 2. Open `SSVidPlayer.html` in your browser of choice (Firefox/Chrome/Edge recommended for RTX VSR).
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
-4. (Optional) Drag and drop an `.srt` file to instantly load subtitles. Adjust timing with Sub-Sync controls.
-5. .MP4 FILES ARE HEAVILY SUGGESTED. You may get mixed results with other filetypes depending how they were encoded, but all .mp4s should work. 
+4. (Optional) Drag and drop an `.srt` file to instantly load subtitles. Adjust timing with **Sub-Sync** controls.
+5. `.mp4` FILES ARE HEAVILY SUGGESTED. You may get mixed results with other filetypes depending how they were encoded, but all `.mp4`s should work. 
 
 ## Shortcuts & Controls
 
-* **Spacebar:** Play / Pause
-* **Single Click on player:** Play / Pause
-* **Arrow Left / Right:** Skip backward / forward 5 seconds
+* **Spacebar:** **Play** / **Pause**
+* **Single Click on player:** **Play** / **Pause**
+* **Arrow Left** / **Right:** Skip backward / forward 5 seconds
 * **Scroll Wheel (over inputs):** Adjust volume, zoom, sync offsets, and cropping pixel by pixel.
 * **Double Click on player:** Open file browser to load new media.
 * **Click & Drag (Subtitles):** Reposition subtitles anywhere on the screen.
