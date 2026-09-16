@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SSVidPlayer</title>
+    <title>SSVidPlayer 1.0</title>
     <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iIzMzMyIvPjxwb2x5Z29uIHBvaW50cz0iOSw3IDE4LDEyIDksMTciIGZpbGw9IndoaXRlIi8+PC9zdmc+" type="image/svg+xml">
     <style>
         body {
@@ -341,7 +341,7 @@
 
     <canvas id="ambientCanvas" class="hidden"></canvas>
     
-    <video width="640" id="videoPlayer">
+    <video width="640" id="videoPlayer" crossorigin="anonymous">
         Your browser does not support the video tag.
     </video>
     <div id="customSubContainer" class="draggable-sub"></div>
@@ -490,6 +490,7 @@
         let currentFitScale = 1;
         let audioCtx;
         let gainNode;
+        const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 
         window.addEventListener('load', () => {
         videoFileInput.value = '';
@@ -690,6 +691,12 @@
             }
 
             if (videoFile) {
+                // CHROME/EDGE: Initialize Web Audio BEFORE setting source so it doesn't bypass.
+                // Firefox doesn't need this and uses your original safe method.
+                if (!isFirefox) {
+                    initAudio(); 
+                }
+                
                 filenameDisplay.innerText = videoFile.name; // Display the active file name
                 removeManualTrack();
                 previousSubSelection = null; // Clean slate for the new video
@@ -865,6 +872,7 @@
 
             volumeSlider.value = 1;
             volumeValue.innerText = 100;
+            videoPlayer.volume = 1;
             if (gainNode) gainNode.gain.value = 1;
 
             videoPlayer.removeAttribute('controls');
@@ -885,14 +893,33 @@
 
         function initAudio() {
             if (!audioCtx) {
-                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                audioCtx = new AudioContext();
                 const source = audioCtx.createMediaElementSource(videoPlayer);
+                
+                // Gain node for the volume boost
                 gainNode = audioCtx.createGain();
-                gainNode.gain.value = parseFloat(volumeSlider.value);
+                const currentVol = parseFloat(volumeSlider.value);
+                gainNode.gain.value = currentVol > 1 
+                    ? (isFirefox ? Math.pow(currentVol, 2) : Math.pow(currentVol, 3)) 
+                    : currentVol;
+                
+                // Compressor node to act as a hard limiter
+                const compressor = audioCtx.createDynamicsCompressor();
+                compressor.threshold.value = -1.0; // Start compressing just before clipping
+                compressor.knee.value = 0.0;       // Hard knee (immediate reaction)
+                compressor.ratio.value = 20.0;     // Squash anything that goes over the threshold
+                compressor.attack.value = 0.005;   // React instantly
+                compressor.release.value = 0.05;   // Recover quickly
+                
+                // Route: Source -> Gain -> Compressor -> Destination
                 source.connect(gainNode);
-                gainNode.connect(audioCtx.destination);
+                gainNode.connect(compressor);
+                compressor.connect(audioCtx.destination);
             }
-            if (audioCtx.state === 'suspended') audioCtx.resume();
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
         }
 
         videoPlayer.addEventListener('error', function() {
@@ -1022,7 +1049,16 @@ function resizeAmbientCanvas() {
             playOverlay.classList.remove('visible');
             document.getElementById('iconPlay').style.display = 'none';
             document.getElementById('iconPause').style.display = 'block';
-            initAudio();
+            
+            // FIREFOX: Initialize Web Audio on play (your original, robust method)
+            if (isFirefox) {
+                if (!audioCtx) initAudio();
+            }
+            
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
             manageAmbientState(); 
         });
 
@@ -1225,9 +1261,20 @@ function resizeAmbientCanvas() {
         volumeSlider.addEventListener('input', function(e) {
             const val = parseFloat(e.target.value);
             volumeValue.innerText = Math.round(val * 100);
-            if (gainNode) gainNode.gain.value = val;
             
-            // Auto-sync the UI icon if the user drags the slider manually
+            if (gainNode) {
+                // DO NOT touch videoPlayer.volume here. Chromium multiplies videoPlayer.volume 
+                // by the gainNode, which was causing your insane volume drops (double-attenuation).
+                // Edge/Chrome's compressor squashes audio much harder than Firefox's, so we push a higher multiplier.
+                gainNode.gain.value = val > 1 ? (isFirefox ? Math.pow(val, 2) : Math.pow(val, 3)) : val;
+            } else {
+                videoPlayer.volume = Math.min(1, val);
+            }
+            
+            if (audioCtx && audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            
             if (val > 0 && isMuted) {
                 isMuted = false;
                 updateMuteUI(false);
