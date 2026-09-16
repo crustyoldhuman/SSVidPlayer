@@ -6,13 +6,18 @@ Standalone desktop media players like VLC often lack native support for modern G
 
 ## Why This Exists
 
-Browsers natively support hardware AI upscaling (like NVIDIA RTX Video Super Resolution) for low-resolution video, but standard drag-and-drop local playback in browsers is a pretty sad experience that leaves a lot to be desired. **SSVidPlayer** solves this by offering:
+Trying to play upscaled local videos on Windows the way streaming videos upscale is a nightmare. Getting your $1000 GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring bloated media players or obscure plugins that don't even end up working half the time.
 
-* **Arbitrary Video Scaling:** Low-res videos are meant to be upscaled, but they look tiny when displayed normally. The size slider lets you scale the video up to 5x so you can actually take advantage of the hardware upscaling on a large screen.
-* **Pixel-Perfect Cropping:** AI upscalers get confused by encoded black letterbox bars, trying to process the black space instead of just the image is a waste of resources. SSVidPlayer lets you crop out the edges in real-time so your GPU only focuses on upscaling the actual video content.
+SSVidPlayer exists for one core purpose: **to make local video AI upscaling effortless.**
 
-## Features
+By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the browser's native hardware upscaling and applies it to your local media just like it would a web stream. 
 
+All the other bells and whistles are just cherries on top of that core purpose.
+
+## Other Features
+
+* **Arbitrary Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor.
+* **Pixel-Perfect Cropping:** AI upscalers waste resources trying to process encoded black letterbox bars. SSVidPlayer lets you crop the edges in real-time so your GPU only focuses on the actual video content.
 * **300% Audio Amplification:** Bypasses standard browser volume limits using the Web Audio API `GainNode`, allowing you to boost quiet audio tracks up to 3x (300%) their native volume.
 * **Smart Window Fitting:** A dedicated "Fit to Page" toggle that automatically calculates your viewport and scales the video to utilize the maximum available screen real estate without clipping.
 * **Advanced Subtitle Engine:**
@@ -38,7 +43,6 @@ No installation, no build steps, and no server required.
 2. Open `SSVidPlayer.html` in your browser of choice (Firefox/Chrome/Edge recommended for RTX VSR).
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
 4. (Optional) Drag and drop an `.srt` file to instantly load subtitles. Adjust timing with Sub-Sync controls.
-5. Use the **Vid Size** slider to scale the video and trigger your browser's native super sampling.
 
 ## Shortcuts & Controls
 
