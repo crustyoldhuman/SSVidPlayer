@@ -1021,9 +1021,10 @@ function resizeAmbientCanvas() {
                 if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, 1, destX3, destY1, dwRight, dhTop);
             }
             if (dhCenter > 0) {
-                if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, 1, srcH, destX1, destY2, dwLeft, dhCenter);
-                if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, srcH, destX3, destY2, dwRight, dhCenter);
-            }
+            if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, 1, srcH, destX1, destY2, dwLeft, dhCenter);
+            if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, srcH, destX2, destY2, dwCenter, dhCenter);
+            if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, srcH, destX3, destY2, dwRight, dhCenter);
+        }
             if (dhBottom > 0) {
                 if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, 1, 1, destX1, destY3, dwLeft, dhBottom);
                 if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, srcW, 1, destX2, destY3, dwCenter, dhBottom);
