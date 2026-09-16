@@ -4,6 +4,9 @@ A lightweight, zero-dependency HTML5 video player designed to force native brows
 
 Standalone desktop media players like VLC often lack native support for modern GPU-accelerated video super sampling, or require complex plugins to get working. Web browsers, however, usually support AI upscaling natively. SSVidPlayer wraps your local media in a highly customizable HTML environment, allowing you to scale and crop videos while taking advantage of the AI upscaling your GPU loves to do, all while remaining entirely local and privacy-respecting. 
 
+<p align="center"><img width="900" alt="DefaultPageScreenie" src="https://github.com/user-attachments/assets/9c48b3db-a3ea-430c-8d4b-8549d1b6662b" /></p>
+
+
 ## Why This Exists
 
 Trying to play upscaled local videos on Windows the way streaming videos upscale is a nightmare. Getting your $1000 GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring bloated media players or obscure plugins that don't even end up working half the time.
@@ -13,6 +16,8 @@ SSVidPlayer exists for one core purpose: **to make local video AI upscaling effo
 By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the browser's native hardware upscaling and applies it to your local media just like it would a web stream. 
 
 All the other bells and whistles are just cherries on top of that core purpose.
+
+<p align="center"><img width="900" alt="VidPlayingScreenie" src="https://github.com/user-attachments/assets/754ac2ad-52a5-415b-8e55-98a59f39fb5d" /></p>
 
 ## Other Features
 
