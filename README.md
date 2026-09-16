@@ -27,14 +27,14 @@ All the other bells and whistles are just cherries on top of that core purpose.
 * **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your viewport and scales the video to utilize the maximum available screen real estate without clipping.
 * **Advanced Subtitle Engine:**
   * Drag-and-drop `.srt` support with on-the-fly `.vtt` conversion.
-  * Real-time **Sub-Sync** offset (click the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond).
-  * Draggable subtitles (click and move text anywhere on the screen).
+  * Real-time **Sub-Sync** offset (click or scroll the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond).
+  * Draggable subtitles (click and move text anywhere on the screen)
   * Adjustable subtitle font size.
-* **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider (added after above screenshot).
+  * Aspect-ratio unlinking (crop top/bottom or left/right independently)
+* **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider (not pictured in above screenshot).
 * **Broad Media Support:** Plays `.mp4`, `.mkv`, and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files. 
 * **Power User Controls:**
   * Scroll-wheel support for volume, size, and cropping values.
-  * Aspect-ratio unlinking (crop top/bottom or left/right independently).
   * Loop toggling for background media.
   * Smart mute memory (remembers your exact volume percentage when unmuting).
   * Auto-hiding, distraction-free UI.
