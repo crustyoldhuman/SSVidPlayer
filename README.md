@@ -42,8 +42,6 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 ## How to Use
 
-No installation, no build steps, and no server required.
-
 1. Download `SSVidPlayer.html` by going to the [Release Page](https://github.com/crustyoldhuman/SSVidPlayer/releases) under the newest version.
 2. Open `SSVidPlayer.html` in your browser of choice (Firefox/Chrome/Edge recommended for RTX VSR).
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
