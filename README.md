@@ -21,7 +21,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 ## Other Features
 
-* **Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor.
+* **Video Scaling:** Because upscaled low-res videos look tiny natively, the size slider lets you blow the video up to 5x so you can actually enjoy the hardware upscaling on a large monitor without needing to go full screen.
 * **Edge Cropping:** Burned in black edges ruin the ambient glow effect, and AI upscalers waste resources trying to process encoded black letterbox bars. SSVidPlayer lets you crop the edges in real-time to fix both of these problems.
 * **300% Audio Amplification:** Bypasses standard browser volume limits using the Web Audio API `GainNode`, allowing you to boost quiet audio tracks up to 3x (300%) their native volume.
 * **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your viewport and scales the video to utilize the maximum available screen real estate without clipping.
