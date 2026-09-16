@@ -1,0 +1,1325 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SSVidPlayer</title>
+    <link rel="icon" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCI+PHJlY3Qgd2lkdGg9IjI0IiBoZWlnaHQ9IjI0IiByeD0iNCIgZmlsbD0iIzMzMyIvPjxwb2x5Z29uIHBvaW50cz0iOSw3IDE4LDEyIDksMTciIGZpbGw9IndoaXRlIi8+PC9zdmc+" type="image/svg+xml">
+    <style>
+        body {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            margin: 0;
+            background-color: #000000;
+            color: #ffffff;
+            flex-direction: column;
+            font-family: sans-serif;
+            overflow: hidden;
+            transition: background-color 0.2s ease;
+            position: relative; 
+            z-index: 0;
+        }
+        body.drag-over {
+            background-color: #1a1a1a;
+        }
+        .controls {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(20, 20, 20, 0.85);
+            padding: 15px 25px;
+            border-radius: 10px;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.4s ease;
+        }
+        .controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #filenameDisplay:empty {
+            display: none;
+        }
+        .bottom-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background-color: rgba(20, 20, 20, 0.85);
+            padding: 15px 25px;
+            border-radius: 10px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            transition: opacity 0.4s ease;
+            width: 80%;
+            max-width: 900px;
+        }
+        .bottom-controls.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #seekSlider {
+            flex-grow: 1;
+        }
+        #timeDisplay {
+            font-size: 14px;
+            min-width: 100px;
+            text-align: center;
+            font-family: monospace;
+        }
+        .top-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: nowrap;
+            justify-content: center;
+            white-space: nowrap;
+        }
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .bottom-row {
+            display: flex;
+            gap: 20px;
+            align-items: center;
+            flex-wrap: wrap;
+            justify-content: center;
+            width: 100%;
+        }
+        .ui-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+        }
+        select {
+            background-color: #333333;
+            color: #ffffff;
+            border: 1px solid #666666;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+        input[type="file"], input[type="range"], input[type="checkbox"] {
+            color: #ffffff;
+            cursor: pointer;
+        }
+        button, .custom-file-label {
+            background-color: #333333;
+            color: #ffffff;
+            border: 1px solid #666666;
+            padding: 8px 16px;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            font-size: 13.33px; /* Matches default button text size */
+            display: inline-block;
+            box-sizing: border-box;
+        }
+        button:hover, .custom-file-label:hover {
+            background-color: #555555;
+        }
+        video {
+            background-color: #111111;
+            position: relative;
+            z-index: 2; 
+        }
+
+        #ambientCanvas {
+            position: fixed; 
+            top: 50%;
+            left: 50%;
+            width: 120vw;  
+            height: 120vh;
+            transform: translate(-50%, -50%);
+            z-index: 1; 
+            filter: blur(100px) saturate(150%) brightness(1.2); 
+            opacity: 0.9; 
+            pointer-events: none; 
+            transition: opacity 0.5s ease;
+        }
+        #ambientCanvas.hidden {
+            opacity: 0;
+        }
+
+        .play-overlay {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: default;
+            z-index: 50;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease, transform 0.2s ease;
+            text-shadow: 0px 4px 12px rgba(0, 0, 0, 0.8);
+        }
+        .play-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .play-overlay.ready {
+            cursor: pointer;
+        }
+        .play-overlay.ready:hover {
+            transform: translate(-50%, -50%) scale(1.05);
+        }
+        .overlay-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+        }
+        .play-icon {
+            font-size: 80px;
+            line-height: 1;
+            margin-bottom: 10px;
+        }
+        .play-text {
+            font-size: 20px;
+            font-weight: bold;
+        }
+        .spinner {
+            border: 6px solid rgba(255, 255, 255, 0.2);
+            border-top: 6px solid #ffffff;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin-bottom: 15px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .toast {
+            position: fixed;
+            bottom: 120px;
+            background-color: rgba(80, 80, 80, 0.9);
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-weight: bold;
+            z-index: 200;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            pointer-events: none;
+            box-shadow: 0px 4px 12px rgba(0,0,0,0.5);
+        }
+        .toast.hidden {
+            opacity: 0;
+            transform: translateY(20px);
+        }
+        .draggable-sub {
+            position: fixed;
+            bottom: 15%;
+            left: 50%;
+            transform: translateX(-50%) translate(0px, 0px);
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            text-shadow: -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000, 0px 4px 10px rgba(0,0,0,0.8);
+            background: rgba(0, 0, 0, 0.4);
+            padding: 4px 16px;
+            border-radius: 8px;
+            cursor: grab;
+            z-index: 60;
+            user-select: none;
+            pointer-events: auto;
+        }
+        .draggable-sub:empty {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls" id="controlBar">
+        <div class="top-row">
+            <label for="videoFileInput" class="custom-file-label">Browse Media...</label>
+            <input type="file" id="videoFileInput" accept="video/*,audio/*,.srt" multiple style="display: none;">
+            
+            <div class="ui-group" id="subtitleContainer">
+                <button id="btnSubtitles">Load Subtitles</button>
+                <select id="subSelect" style="display: none;"></select>
+                <div id="offsetGroup" style="display: none; align-items: center; gap: 5px;">
+                    <label for="subOffset" style="font-size: 13px;">Sub-Sync:</label>
+                    <span id="offsetSign" style="font-size: 16px; font-weight: bold; width: 12px; text-align: center; color: #4ade80; cursor: pointer; user-select: none;" title="Click to flip sign">+</span>
+                    <input type="number" id="subOffset" step="0.25" min="0" value="0" title="Offset in seconds" style="width: 50px; background-color: #333333; color: #ffffff; border: 1px solid #666666; border-radius: 4px; padding: 2px 4px;">
+                    <span style="font-size: 13px;">s</span>
+                </div>
+                <input type="file" id="srtFileInput" accept=".srt" style="display: none;">
+            </div>
+
+            <div class="slider-container" style="display: flex; align-items: center; gap: 15px;">
+                <div style="display: flex; flex-direction: column; align-items: flex-end; justify-content: center; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <label for="sizeSlider" style="font-size: small;" >Vid Size: <span id="scaleValue">1.00</span>x</label>
+                        <input type="range" id="sizeSlider" min="0.5" max="5" step="0.05" value="1" style="width: 80px;">
+                    </div>
+                    <div id="subSizeGroup" style="display: none; align-items: center; gap: 10px;">
+                        <label for="subSizeSlider" style="font-size: small;" >Sub Size: <span id="subScaleValue">1.00</span>x</label>
+                        <input type="range" id="subSizeSlider" min="0.5" max="3" step="0.1" value="1.00" style="width: 80px;">
+                    </div>
+                </div>
+                <button id="btnCropToggle">Crop edges</button>
+            </div>
+            
+            <div class="ui-group">
+                <input type="checkbox" id="ambientToggle"> <label for="ambientToggle">Glow</label>
+            </div>
+        </div>
+        <div class="crop-row" id="cropControls" style="display: none; gap: 20px; align-items: center; justify-content: center; width: 100%; flex-wrap: wrap;">
+            <div class="ui-group">
+                <label>Top/Bottom (px):</label>
+                <input type="number" id="cropTop" min="0" step="1" value="0" style="width: 55px; background-color: #333; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 2px 4px;">
+                <button id="linkTB" style="padding: 2px 6px; background-color: #555;" title="Unlink/Link">🔗</button>
+                <input type="number" id="cropBottom" min="0" step="1" value="0" style="width: 55px; background-color: #333; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 2px 4px;">
+            </div>
+            <div class="ui-group">
+                <label>Left/Right (px):</label>
+                <input type="number" id="cropLeft" min="0" step="1" value="0" style="width: 55px; background-color: #333; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 2px 4px;">
+                <button id="linkLR" style="padding: 2px 6px; background-color: #555;" title="Unlink/Link">🔗</button>
+                <input type="number" id="cropRight" min="0" step="1" value="0" style="width: 55px; background-color: #333; color: #fff; border: 1px solid #666; border-radius: 4px; padding: 2px 4px;">
+            </div>
+        </div>
+        <div id="filenameDisplay" style="font-size: 13px; color: #aaaaaa; text-align: center; margin-top: -5px; word-break: break-all; max-width: 90%;"></div>
+    </div>
+
+    <div id="playOverlay" class="play-overlay visible">
+        <div id="overlayContent" class="overlay-content">
+            <div class="play-text">Double-click here or drag and drop an .mp4 to load a video</div>
+        </div>
+    </div>
+
+    <div id="subToast" class="toast hidden">Subtitles loaded</div>
+
+    <div class="bottom-controls" id="bottomControlBar">
+        <button id="btnPlayPause" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Play/Pause">
+            <svg id="iconPlay" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+            <svg id="iconPause" style="display: none;" width="16" height="16" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+        </button>
+        <button id="btnLoop" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Toggle Loop">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21.5 2v6h-6M2.5 22v-6h6M2 11.5a10 10 0 0 1 18.8-4.3M22 12.5a10 10 0 0 1-18.8 4.3"/></svg>
+        </button>
+        <input type="range" id="seekSlider" min="0" max="100" value="0" step="0.1">
+        <span id="timeDisplay">0:00 / 0:00</span>
+        <div class="slider-container" style="margin-left: 10px; align-items: flex-end;">
+            <span id="muteIcon" style="cursor: pointer; user-select: none; transition: opacity 0.2s; margin-bottom: 2px; display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px;" title="Mute/Unmute">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+                    <path id="volWaves" d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+                    <line id="volMuteLine" x1="1" y1="3" x2="12" y2="21" style="display: none; stroke: #ff5555; stroke-width: 2;"></line>
+                </svg>
+            </span>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 4px;">
+                <label style="font-size: 13px; display: inline-block; width: 45px; text-align: center;"><span id="volumeValue">100</span>%</label>
+                <input type="range" id="volumeSlider" min="0" max="3" step="0.01" value="1" style="width: 70px;">
+            </div>
+        </div>
+        <button id="btnFit" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Fit to Page">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="12" x2="2" y2="12"></line><polyline points="15 5 22 12 15 19"></polyline><polyline points="9 5 2 12 9 19"></polyline></svg>
+        </button>
+        <button id="btnFullscreen" style="width: 32px; height: 32px; padding: 0; display: inline-flex; align-items: center; justify-content: center;" title="Fullscreen">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path></svg>
+        </button>
+    </div>
+
+    <canvas id="ambientCanvas" class="hidden"></canvas>
+    
+    <video width="640" id="videoPlayer">
+        Your browser does not support the video tag.
+    </video>
+    <div id="customSubContainer" class="draggable-sub"></div>
+
+    <script>
+        const videoFileInput = document.getElementById('videoFileInput');
+        const videoPlayer = document.getElementById('videoPlayer');
+        const sizeSlider = document.getElementById('sizeSlider');
+        const scaleValue = document.getElementById('scaleValue');
+        const volumeSlider = document.getElementById('volumeSlider');
+        const volumeValue = document.getElementById('volumeValue');
+        const muteIcon = document.getElementById('muteIcon');
+        const btnFit = document.getElementById('btnFit');
+        const btnCropToggle = document.getElementById('btnCropToggle');
+        const cropControls = document.getElementById('cropControls');
+        const cropTop = document.getElementById('cropTop');
+        const cropBottom = document.getElementById('cropBottom');
+        const cropLeft = document.getElementById('cropLeft');
+        const cropRight = document.getElementById('cropRight');
+        const linkTB = document.getElementById('linkTB');
+        const linkLR = document.getElementById('linkLR');
+        const controlBar = document.getElementById('controlBar');
+        const playOverlay = document.getElementById('playOverlay');
+        const overlayContent = document.getElementById('overlayContent');
+        const subtitleContainer = document.getElementById('subtitleContainer');
+        const filenameDisplay = document.getElementById('filenameDisplay');
+        const btnSubtitles = document.getElementById('btnSubtitles');
+        const subSelect = document.getElementById('subSelect');
+        const srtFileInput = document.getElementById('srtFileInput');
+        const subToast = document.getElementById('subToast');
+        const subOffset = document.getElementById('subOffset');
+        const offsetGroup = document.getElementById('offsetGroup');
+        const subSizeGroup = document.getElementById('subSizeGroup');
+        const subSizeSlider = document.getElementById('subSizeSlider');
+        const subScaleValue = document.getElementById('subScaleValue');
+        const customSubContainer = document.getElementById('customSubContainer');
+        
+        const subStyle = document.createElement('style');
+        document.head.appendChild(subStyle);
+        const bottomControlBar = document.getElementById('bottomControlBar');
+        const btnPlayPause = document.getElementById('btnPlayPause');
+        const btnLoop = document.getElementById('btnLoop');
+        const seekSlider = document.getElementById('seekSlider');
+        const timeDisplay = document.getElementById('timeDisplay');
+        const btnFullscreen = document.getElementById('btnFullscreen');
+        
+        let currentVideoUrl = null;
+        let currentSrtUrl = null;
+        let previousSubSelection = null; // Tracks memory of selections across UI updates
+        let currentSyncOffset = 0; // Tracks the current active time shift applied to cues
+        
+        const ambientToggle = document.getElementById('ambientToggle');
+        const ambientCanvas = document.getElementById('ambientCanvas');
+        const ambientCtx = ambientCanvas.getContext('2d', { alpha: false });
+
+        let isAmbientEnabled = false;
+        let isFirstFrame = true;
+        let ambientAnimId;
+
+        let isLinkedTB = true;
+        let isLinkedLR = true;
+
+        // --- CUSTOM DRAGGABLE SUBTITLE LOGIC ---
+        let isDraggingSub = false;
+        let subDragStartX = 0, subDragStartY = 0;
+        let subOffsetX = 0, subOffsetY = 0;
+
+        customSubContainer.addEventListener('mousedown', (e) => {
+            isDraggingSub = true;
+            subDragStartX = e.clientX - subOffsetX;
+            subDragStartY = e.clientY - subOffsetY;
+            customSubContainer.style.cursor = 'grabbing';
+            e.stopPropagation(); 
+        });
+        window.addEventListener('mousemove', (e) => {
+            if (!isDraggingSub) return;
+            subOffsetX = e.clientX - subDragStartX;
+            subOffsetY = e.clientY - subDragStartY;
+            customSubContainer.style.transform = `translateX(-50%) translate(${subOffsetX}px, ${subOffsetY}px)`;
+        });
+        window.addEventListener('mouseup', () => {
+            isDraggingSub = false;
+            customSubContainer.style.cursor = 'grab';
+        });
+
+        function renderCustomSubtitles(e) {
+            const activeCues = e.target ? e.target.activeCues : e.activeCues;
+            if (!activeCues || activeCues.length === 0) {
+                customSubContainer.innerHTML = '';
+                return;
+            }
+            let html = '';
+            for (let i = 0; i < activeCues.length; i++) {
+                html += activeCues[i].text.replace(/\n/g, '<br>') + '<br>';
+            }
+            customSubContainer.innerHTML = html;
+        }
+
+        btnCropToggle.addEventListener('click', () => {
+            if (cropControls.style.display === 'none') {
+                cropControls.style.display = 'flex';
+            } else {
+                cropControls.style.display = 'none';
+            }
+        });
+
+        linkTB.addEventListener('click', () => {
+            isLinkedTB = !isLinkedTB;
+            linkTB.style.backgroundColor = isLinkedTB ? '#555' : '#333';
+            if (isLinkedTB) { cropBottom.value = cropTop.value; applyVideoCrop(); }
+        });
+
+        linkLR.addEventListener('click', () => {
+            isLinkedLR = !isLinkedLR;
+            linkLR.style.backgroundColor = isLinkedLR ? '#555' : '#333';
+            if (isLinkedLR) { cropRight.value = cropLeft.value; applyVideoCrop(); }
+        });
+
+        function applyVideoCrop() {
+            if (videoPlayer.readyState === 0) return; // Abort if no video is loaded
+            if (!nativeWidth || !nativeHeight) return;
+            const t = (parseFloat(cropTop.value) || 0) / nativeHeight * 100;
+            const r = (parseFloat(cropRight.value) || 0) / nativeWidth * 100;
+            const b = (parseFloat(cropBottom.value) || 0) / nativeHeight * 100;
+            const l = (parseFloat(cropLeft.value) || 0) / nativeWidth * 100;
+            
+            videoPlayer.style.clipPath = `inset(${t}% ${r}% ${b}% ${l}%)`;
+            updateVideoSize(sizeSlider.value); 
+        }
+
+        cropTop.addEventListener('input', (e) => { if(isLinkedTB) cropBottom.value = e.target.value; applyVideoCrop(); });
+        cropBottom.addEventListener('input', (e) => { if(isLinkedTB) cropTop.value = e.target.value; applyVideoCrop(); });
+        cropLeft.addEventListener('input', (e) => { if(isLinkedLR) cropRight.value = e.target.value; applyVideoCrop(); });
+        cropRight.addEventListener('input', (e) => { if(isLinkedLR) cropLeft.value = e.target.value; applyVideoCrop(); });
+
+        videoPlayer.addEventListener('seeked', () => {
+        if (isAmbientEnabled && !document.fullscreenElement) {
+            isFirstFrame = true;
+            if (videoPlayer.paused) drawAmbientFrame();
+        }
+    });
+
+        let nativeWidth = 640;
+        let nativeHeight = 360;
+        let hideTimeout;
+        let currentFitScale = 1;
+        let audioCtx;
+        let gainNode;
+
+        window.addEventListener('load', () => {
+        videoFileInput.value = '';
+        ambientToggle.checked = false; // Forces the browser to forget past checkbox states
+        isAmbientEnabled = false;
+    });
+
+        // --- SUBTITLE ENGINE REWRITE ---
+        
+        function removeManualTrack() {
+            const trackElement = document.getElementById('manualSrtTrack');
+            if (trackElement) {
+                videoPlayer.removeChild(trackElement);
+            }
+            if (currentSrtUrl) {
+                URL.revokeObjectURL(currentSrtUrl);
+                currentSrtUrl = null;
+            }
+        }
+
+        function applySubtitleSelection() {
+            const tracks = videoPlayer.textTracks;
+            
+            // If user clicked "Load SRT", open file browser and revert dropdown visually
+            if (subSelect.value === 'load') {
+                subSelect.value = previousSubSelection || 'unload';
+                srtFileInput.click();
+                return;
+            }
+            
+            const isNewSelection = previousSubSelection !== subSelect.value;
+            previousSubSelection = subSelect.value;
+            
+            if (subSelect.value === 'unload') {
+                offsetGroup.style.display = 'none';
+                if (subSizeGroup) subSizeGroup.style.display = 'none';
+                for (let i = 0; i < tracks.length; i++) {
+                    tracks[i].mode = 'hidden';
+                    tracks[i].removeEventListener('cuechange', renderCustomSubtitles);
+                }
+                customSubContainer.innerHTML = '';
+                const manualTrack = document.getElementById('manualSrtTrack');
+                if (manualTrack) {
+                    removeManualTrack();
+                    updateSubtitleUI(); 
+                }
+            } else {
+                offsetGroup.style.display = 'flex';
+                if (subSizeGroup) subSizeGroup.style.display = 'flex';
+                
+                // Only reset the offset if a genuinely new track is selected
+                if (isNewSelection) {
+                    subOffset.value = 0;
+                    currentSyncOffset = 0;
+                    const os = document.getElementById('offsetSign');
+                    if (os) { os.innerText = '+'; os.style.color = '#4ade80'; }
+                }
+                
+                for (let i = 0; i < tracks.length; i++) {
+                    tracks[i].removeEventListener('cuechange', renderCustomSubtitles);
+                    if (String(i) === subSelect.value) {
+                        tracks[i].mode = 'hidden'; // Keeps native subtitles hidden
+                        tracks[i].addEventListener('cuechange', renderCustomSubtitles);
+                        renderCustomSubtitles({ target: tracks[i] }); // Render immediately
+                    } else {
+                        tracks[i].mode = 'hidden';
+                    }
+                }
+            }
+        }
+
+        function updateSubtitleUI() {
+            const tracks = videoPlayer.textTracks;
+            let hasTracks = tracks && tracks.length > 0;
+
+            if (hasTracks) {
+                btnSubtitles.style.display = 'none';
+                subSelect.style.display = 'block';
+                
+                const currentSelection = subSelect.value;
+                subSelect.innerHTML = '';
+                
+                let manualIndex = -1;
+                let nativelyShowingIndex = -1;
+                
+                // 1. Populate Available Tracks
+                for (let i = 0; i < tracks.length; i++) {
+                    const opt = document.createElement('option');
+                    opt.value = i;
+                    
+                    if (tracks[i].label === 'Manual SRT') manualIndex = i;
+                    if (tracks[i].mode === 'showing') nativelyShowingIndex = i;
+                    
+                    let trackLabel = tracks[i].label;
+                    if (!trackLabel) {
+                        trackLabel = tracks[i].language ? `Embedded Track (${tracks[i].language})` : `Embedded Track ${i + 1}`;
+                    }
+                    
+                    opt.text = trackLabel;
+                    subSelect.appendChild(opt);
+                }
+                
+                // 2. Add standard Load / Unload options at the bottom
+                const loadOpt = document.createElement('option');
+                loadOpt.value = 'load';
+                loadOpt.text = 'Load SRT...';
+                subSelect.appendChild(loadOpt);
+                
+                const offOpt = document.createElement('option');
+                offOpt.value = 'unload';
+                offOpt.text = 'Unload / Off';
+                subSelect.appendChild(offOpt);
+                
+                // 3. Smart Selection Logic
+                // If they just loaded a manual track, force select it
+                if (currentSelection === 'load' && manualIndex !== -1) {
+                    subSelect.value = manualIndex;
+                } 
+                // If they had a previously valid selection, preserve it
+                else if (currentSelection && currentSelection !== 'unload' && Array.from(subSelect.options).some(o => String(o.value) === String(currentSelection))) {
+                    subSelect.value = currentSelection;
+                } 
+                // If a track is natively active and they didn't specifically unload it, use that
+                else if (nativelyShowingIndex !== -1 && previousSubSelection !== 'unload') {
+                    subSelect.value = nativelyShowingIndex;
+                } 
+                // If tracks exist and they didn't explicitly unload, default to the first track
+                else if (tracks.length > 0 && previousSubSelection !== 'unload' && currentSelection !== 'unload') {
+                    subSelect.value = 0; 
+                } 
+                // Otherwise, unload/hide everything
+                else {
+                    subSelect.value = 'unload';
+                }
+                
+                applySubtitleSelection();
+            } else {
+                // No tracks available -> Show standard button
+                btnSubtitles.style.display = 'block';
+                subSelect.style.display = 'none';
+                subSelect.innerHTML = '';
+            }
+        }
+
+        function loadSrt(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                let srtText = event.target.result;
+                srtText = srtText.replace(/^\uFEFF/, '').replace(/\r\n/g, '\n').trim();
+                const vttText = "WEBVTT\n\n" + srtText.replace(/(\d{1,2}:\d{2}:\d{2}),(\d{3})/g, (match, p1, p2) => {
+                    let parts = p1.split(':');
+                    if (parts[0].length === 1) parts[0] = '0' + parts[0];
+                    return parts.join(':') + '.' + p2;
+                });
+                
+                const blob = new Blob([vttText], { type: 'text/vtt' });
+                removeManualTrack(); // Ensure we don't duplicate
+                currentSrtUrl = URL.createObjectURL(blob);
+                
+                const track = document.createElement('track');
+                track.id = 'manualSrtTrack';
+                track.kind = 'subtitles';
+                track.label = 'Manual SRT';
+                track.srclang = 'en';
+                track.src = currentSrtUrl;
+                
+                // Intercept the race condition by resetting the memory state
+                // before the browser triggers the 'addtrack' event!
+                previousSubSelection = 'load';
+                subSelect.value = 'load';
+                
+                videoPlayer.appendChild(track);
+                
+                subToast.classList.remove('hidden');
+                setTimeout(() => subToast.classList.add('hidden'), 2500);
+
+                // Short delay so browser registers the track before UI refresh
+                setTimeout(() => {
+                    subSelect.value = 'load'; // Forces auto-select of the new track
+                    updateSubtitleUI();
+                }, 50);
+            };
+            reader.readAsText(file);
+        }
+
+        function processVideoFiles(files) {
+            if (!files || files.length === 0) return;
+
+            let videoFile = null;
+            let srtFile = null;
+
+            for (let i = 0; i < files.length; i++) {
+                if (files[i].type.startsWith('video/') || files[i].type.startsWith('audio/') || files[i].name.match(/\.(mkv|mp4|mp3|wav|ogg|flac)$/i)) {
+                    videoFile = files[i];
+                } else if (files[i].name.endsWith('.srt')) {
+                    srtFile = files[i];
+                }
+            }
+
+            if (videoFile) {
+                filenameDisplay.innerText = videoFile.name; // Display the active file name
+                removeManualTrack();
+                previousSubSelection = null; // Clean slate for the new video
+                
+                cropControls.style.display = 'none';
+                cropTop.value = 0; cropBottom.value = 0; cropLeft.value = 0; cropRight.value = 0;
+                applyVideoCrop();
+                
+                // Hide dropdown while loading new video
+                subSelect.innerHTML = '';
+                subSelect.value = '';
+                subSelect.style.display = 'none';
+                btnSubtitles.style.display = 'block';
+                
+                playOverlay.classList.remove('ready');
+                playOverlay.classList.add('visible');
+                overlayContent.innerHTML = `
+                    <div class="spinner"></div>
+                    <div class="play-text">Loading video...</div>
+                `;
+                
+                if (currentVideoUrl) {
+                    URL.revokeObjectURL(currentVideoUrl);
+                }
+                currentVideoUrl = URL.createObjectURL(videoFile);
+                videoPlayer.src = currentVideoUrl;
+                
+                isFirstFrame = true;
+
+                if (srtFile) loadSrt(srtFile);
+
+                videoPlayer.load(); 
+            } else if (srtFile && videoPlayer.src) {
+                loadSrt(srtFile);
+            } else {
+                alert("Please select a valid video file.");
+            }
+        }
+
+        // Subtitle UI Event Listeners
+        subSizeSlider.addEventListener('input', (e) => {
+            const val = parseFloat(e.target.value).toFixed(2);
+            subScaleValue.innerText = val;
+            subStyle.innerHTML = `video::cue { font-size: ${val}em !important; } #customSubContainer { font-size: ${val * 24}px !important; }`;
+        });
+        
+        subSizeSlider.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            e.deltaY < 0 ? this.stepUp() : this.stepDown();
+            this.dispatchEvent(new Event('input'));
+        });
+
+        btnSubtitles.addEventListener('click', () => { srtFileInput.click(); });
+        subSelect.addEventListener('change', applySubtitleSelection);
+        
+        srtFileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file && file.name.endsWith('.srt')) {
+                loadSrt(file);
+            }
+            e.target.value = ''; // Reset so the exact same file can be clicked again
+        });
+
+        const signSpan = document.getElementById('offsetSign');
+
+        // Bonus: Allow clicking the + / - symbol to manually flip the time offset!
+        signSpan.addEventListener('click', () => {
+            if (currentSyncOffset !== 0) {
+                applySyncOffset(currentSyncOffset * -1);
+            }
+        });
+
+        function applySyncOffset(newOffset) {
+            const delta = newOffset - currentSyncOffset;
+            if (delta === 0) return; 
+
+            // 1. Update UI colors & symbols (forces the box to only show absolute value)
+            if (newOffset >= 0) {
+                signSpan.innerText = '+';
+                signSpan.style.color = '#4ade80'; // Green
+                subOffset.value = newOffset;
+            } else {
+                signSpan.innerText = '-';
+                signSpan.style.color = '#ff5555'; // Red
+                subOffset.value = Math.abs(newOffset);
+            }
+
+            // 2. Shift the actual subtitle timing
+            const tracks = videoPlayer.textTracks;
+            const activeIndex = subSelect.value;
+            
+            if (activeIndex !== 'unload' && tracks[activeIndex] && tracks[activeIndex].cues) {
+                const track = tracks[activeIndex];
+                const cues = track.cues;
+                
+                track.mode = 'hidden'; 
+                for (let i = 0; i < cues.length; i++) {
+                    cues[i].startTime += delta;
+                    cues[i].endTime += delta;
+                }
+                currentSyncOffset = newOffset;
+                
+                track.mode = 'hidden'; 
+                renderCustomSubtitles({ target: track });
+            } else {
+                currentSyncOffset = newOffset;
+            }
+        }
+
+        // Handles the scroll wheel
+        subOffset.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            let newVal = e.deltaY < 0 ? currentSyncOffset + 0.25 : currentSyncOffset - 0.25;
+            applySyncOffset(newVal);
+        });
+
+        // Handles manually typing or clicking the up/down arrows inside the box
+        subOffset.addEventListener('input', (e) => {
+            let absVal = parseFloat(e.target.value) || 0;
+            // Check the current sign symbol to know if we should treat the typed value as negative
+            let isNegative = signSpan.innerText === '-';
+            let newOffset = isNegative ? -absVal : absVal;
+            
+            applySyncOffset(newOffset);
+        });
+
+        // Ensure embedded tracks are caught dynamically by the browser 
+        videoPlayer.addEventListener('loadeddata', updateSubtitleUI);
+        videoPlayer.addEventListener('loadedmetadata', updateSubtitleUI);
+        videoPlayer.addEventListener('canplay', updateSubtitleUI);
+        videoPlayer.textTracks.addEventListener('addtrack', updateSubtitleUI);
+        videoPlayer.textTracks.addEventListener('removetrack', updateSubtitleUI);
+
+        // --- END SUBTITLE REWRITE ---
+
+        videoFileInput.addEventListener('change', function(event) {
+            processVideoFiles(event.target.files);
+            this.blur();
+        });
+
+        document.body.addEventListener('dragenter', function(event) { event.preventDefault(); });
+        document.body.addEventListener('dragover', function(event) {
+            event.preventDefault(); 
+            document.body.classList.add('drag-over');
+        });
+        document.body.addEventListener('dragleave', function(event) {
+            event.preventDefault();
+            document.body.classList.remove('drag-over');
+        });
+        document.body.addEventListener('drop', function(event) {
+            event.preventDefault();
+            document.body.classList.remove('drag-over');
+            if (event.dataTransfer.files.length > 0) {
+                videoFileInput.files = event.dataTransfer.files; 
+                processVideoFiles(event.dataTransfer.files);
+            }
+        });
+
+        videoPlayer.addEventListener('loadedmetadata', function() {
+            nativeWidth = this.videoWidth;
+            nativeHeight = this.videoHeight;
+
+            updateSliderMax();
+            
+            const dpr = window.devicePixelRatio || 1;
+            const targetScale = (window.innerHeight * 0.75 * dpr) / nativeHeight;
+            
+            // Clamp the scale so it doesn't break the slider's min/max limits
+            const clampedScale = Math.max(sizeSlider.min, Math.min(sizeSlider.max, targetScale)).toFixed(2);
+            
+            sizeSlider.value = clampedScale;
+            updateVideoSize(clampedScale);
+
+            volumeSlider.value = 1;
+            volumeValue.innerText = 100;
+            if (gainNode) gainNode.gain.value = 1;
+
+            videoPlayer.removeAttribute('controls');
+            
+            overlayContent.innerHTML = `
+                <div class="play-icon">&#9658;</div>
+                <div class="play-text">Click or press Space to play</div>
+            `;
+            playOverlay.classList.add('ready'); 
+            playOverlay.classList.add('visible');
+
+            manageAmbientState(); 
+
+            videoPlayer.play().catch(error => {
+                console.log("Autoplay blocked by browser policy. User must initiate playback manually.", error);
+            });
+        });
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const source = audioCtx.createMediaElementSource(videoPlayer);
+                gainNode = audioCtx.createGain();
+                gainNode.gain.value = parseFloat(volumeSlider.value);
+                source.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+        }
+
+        videoPlayer.addEventListener('error', function() {
+            playOverlay.classList.remove('ready');
+            playOverlay.classList.add('visible');
+            ambientVideo.classList.add('hidden');
+            overlayContent.innerHTML = `
+                <div class="play-text" style="color: #ff5555;">Unsupported Format</div>
+                <div style="font-size: 14px; margin-top: 10px;">Your browser cannot play this file. Try an MP4 or WebM.</div>
+            `;
+        });
+
+        function manageAmbientState() {
+        if (!isAmbientEnabled || document.fullscreenElement) {
+            ambientCanvas.classList.add('hidden');
+            cancelAnimationFrame(ambientAnimId);
+        } else if (videoPlayer.readyState > 0) {
+            ambientCanvas.classList.remove('hidden');
+            isFirstFrame = true;
+            drawAmbientFrame();
+            if (!videoPlayer.paused) {
+                drawAmbientLoop();
+            }
+        }
+    }
+
+function resizeAmbientCanvas() {
+        ambientCanvas.width = window.innerWidth / 8;
+        ambientCanvas.height = window.innerHeight / 8;
+        if (videoPlayer.paused && isAmbientEnabled) {
+            isFirstFrame = true;
+            drawAmbientFrame();
+        }
+    }
+    window.addEventListener('resize', resizeAmbientCanvas);
+    resizeAmbientCanvas();
+
+    function drawAmbientFrame() {
+            if (!nativeWidth || !nativeHeight || videoPlayer.readyState === 0) return;
+
+            // 1. Calculate Crop Bounds in physical video pixels
+            const cropTopPx = parseFloat(cropTop.value) || 0;
+            const cropBotPx = parseFloat(cropBottom.value) || 0;
+            const cropLeftPx = parseFloat(cropLeft.value) || 0;
+            const cropRightPx = parseFloat(cropRight.value) || 0;
+
+            // Inset by 3 pixels to safely bypass interpolation from any remaining black bars
+            const inset = 3;
+            const srcX = cropLeftPx + inset;
+            const srcY = cropTopPx + inset;
+            const srcW = nativeWidth - cropLeftPx - cropRightPx - (inset * 2);
+            const srcH = nativeHeight - cropTopPx - cropBotPx - (inset * 2);
+
+            if (srcW <= 0 || srcH <= 0) return;
+
+            // 2. Setup mapping to the oversized 120vw/120vh CSS canvas
+            const cw = ambientCanvas.width;
+            const ch = ambientCanvas.height;
+            const scale = parseFloat(sizeSlider.value);
+            const dpr = window.devicePixelRatio || 1;
+            const fw = (nativeWidth * scale) / dpr;
+            const fh = (nativeHeight * scale) / dpr;
+
+            const videoScreenLeft = (window.innerWidth / 2) - (fw / 2) + ((cropLeftPx * scale) / dpr);
+            const videoScreenTop = (window.innerHeight / 2) - (fh / 2) + ((cropTopPx * scale) / dpr);
+            const videoScreenW = ((nativeWidth - cropLeftPx - cropRightPx) * scale) / dpr;
+            const videoScreenH = ((nativeHeight - cropTopPx - cropBotPx) * scale) / dpr;
+
+            const mapX = (x) => ((x + 0.1 * window.innerWidth) / (1.2 * window.innerWidth)) * cw;
+            const mapY = (y) => ((y + 0.1 * window.innerHeight) / (1.2 * window.innerHeight)) * ch;
+
+            const destX1 = 0; 
+            const destY1 = 0;
+            const destX2 = Math.max(0, mapX(videoScreenLeft));
+            const destY2 = Math.max(0, mapY(videoScreenTop));
+            const destX3 = Math.min(cw, mapX(videoScreenLeft + videoScreenW));
+            const destY3 = Math.min(ch, mapY(videoScreenTop + videoScreenH));
+            const destX4 = cw; 
+            const destY4 = ch;
+
+            const dwLeft = destX2 - destX1; 
+            const dwCenter = destX3 - destX2; 
+            const dwRight = destX4 - destX3;
+            const dhTop = destY2 - destY1; 
+            const dhCenter = destY3 - destY2; 
+            const dhBottom = destY4 - destY3;
+
+            ambientCtx.globalAlpha = isFirstFrame ? 1.0 : 0.10;
+
+            // Target exact 1-pixel native video edges
+            const sx1 = srcX;
+            const sy1 = srcY;
+            const sx2 = srcX + srcW - 1;
+            const sy2 = srcY + srcH - 1;
+
+            if (dhTop > 0) {
+                if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, 1, 1, destX1, destY1, dwLeft, dhTop);
+                if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, 1, destX2, destY1, dwCenter, dhTop);
+                if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, 1, destX3, destY1, dwRight, dhTop);
+            }
+            if (dhCenter > 0) {
+                if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, 1, srcH, destX1, destY2, dwLeft, dhCenter);
+                if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, srcH, destX3, destY2, dwRight, dhCenter);
+            }
+            if (dhBottom > 0) {
+                if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, 1, 1, destX1, destY3, dwLeft, dhBottom);
+                if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, srcW, 1, destX2, destY3, dwCenter, dhBottom);
+                if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy2, 1, 1, destX3, destY3, dwRight, dhBottom);
+            }
+            isFirstFrame = false;
+        }
+
+    function drawAmbientLoop() {
+        if (videoPlayer.paused || videoPlayer.ended || !isAmbientEnabled || document.fullscreenElement) return;
+        drawAmbientFrame();
+        ambientAnimId = requestAnimationFrame(drawAmbientLoop);
+    }
+
+        ambientToggle.addEventListener('change', (e) => {
+            isAmbientEnabled = e.target.checked;
+            manageAmbientState();
+        });
+
+        document.addEventListener('fullscreenchange', manageAmbientState);
+
+        videoPlayer.addEventListener('play', function() {
+            playOverlay.classList.remove('visible');
+            document.getElementById('iconPlay').style.display = 'none';
+            document.getElementById('iconPause').style.display = 'block';
+            initAudio();
+            manageAmbientState(); 
+        });
+
+        videoPlayer.addEventListener('pause', function() {
+            document.getElementById('iconPlay').style.display = 'block';
+            document.getElementById('iconPause').style.display = 'none';
+        });
+
+        videoPlayer.addEventListener('seeked', function() {
+            applySubtitleSelection(); // Force subtitle refresh after scrubbing
+        });
+
+        playOverlay.addEventListener('click', function() {
+            if (videoPlayer.readyState > 0) {
+                videoPlayer.play();
+            }
+        });
+
+        videoPlayer.addEventListener('click', function() {
+            if (videoPlayer.readyState > 0) {
+                if (videoPlayer.paused) videoPlayer.play();
+                else videoPlayer.pause();
+            }
+        });
+
+        function triggerBrowse() {
+            if (videoPlayer.readyState === 0) {
+                videoFileInput.click();
+            }
+        }
+        playOverlay.addEventListener('dblclick', triggerBrowse);
+        videoPlayer.addEventListener('dblclick', triggerBrowse);
+
+        function formatTime(seconds) {
+            if (isNaN(seconds)) return "0:00";
+            const h = Math.floor(seconds / 3600);
+            const m = Math.floor((seconds % 3600) / 60);
+            const s = Math.floor(seconds % 60);
+            if (h > 0) return `${h}:${m < 10 ? '0' : ''}${m}:${s < 10 ? '0' : ''}${s}`;
+            return `${m}:${s < 10 ? '0' : ''}${s}`;
+        }
+
+        btnPlayPause.addEventListener('click', () => {
+            if (videoPlayer.paused) videoPlayer.play();
+            else videoPlayer.pause();
+        });
+
+        btnLoop.addEventListener('click', () => {
+            videoPlayer.loop = !videoPlayer.loop;
+            btnLoop.style.backgroundColor = videoPlayer.loop ? '#4ade80' : '#333333';
+            btnLoop.style.color = videoPlayer.loop ? '#000000' : '#ffffff';
+            btnLoop.style.fontWeight = videoPlayer.loop ? 'bold' : 'normal';
+        });
+
+        videoPlayer.addEventListener('timeupdate', () => {
+            if (!seekSlider.isDragging) {
+                seekSlider.value = (videoPlayer.currentTime / videoPlayer.duration) * 100 || 0;
+            }
+            timeDisplay.innerText = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
+        });
+
+        seekSlider.addEventListener('mousedown', () => seekSlider.isDragging = true);
+        seekSlider.addEventListener('mouseup', () => seekSlider.isDragging = false);
+        seekSlider.addEventListener('touchstart', () => seekSlider.isDragging = true, {passive: true});
+        seekSlider.addEventListener('touchend', () => seekSlider.isDragging = false);
+        seekSlider.addEventListener('input', (e) => {
+            const seekTime = (parseFloat(e.target.value) / 100) * videoPlayer.duration;
+            videoPlayer.currentTime = seekTime;
+            timeDisplay.innerText = `${formatTime(seekTime)} / ${formatTime(videoPlayer.duration)}`;
+        });
+
+        btnFullscreen.addEventListener('click', () => {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => {
+                    alert(`Fullscreen error: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        });
+
+        function updateVideoSize(scale) {
+        if (videoPlayer.readyState === 0) return; // Abort if no video is loaded
+        if (nativeWidth) {
+            const trueWidth = nativeWidth;
+            const trueHeight = nativeHeight;
+                
+                const dpr = window.devicePixelRatio || 1;
+                const fw = (trueWidth * scale) / dpr;
+                const fh = (trueHeight * scale) / dpr;
+
+                videoPlayer.style.width = fw + 'px';
+                videoPlayer.style.height = fh + 'px';
+                scaleValue.innerText = parseFloat(scale).toFixed(2);
+                
+                const canvasW = window.innerWidth * 1.2;
+                const canvasH = window.innerHeight * 1.2;
+                const fadePx = 400; 
+
+                const vwReal = videoPlayer.videoWidth || nativeWidth || 1;
+                const vhReal = videoPlayer.videoHeight || nativeHeight || 1;
+
+                const cT = (parseFloat(cropTop.value) || 0) / vhReal;
+                const cB = (parseFloat(cropBottom.value) || 0) / vhReal;
+                const cL = (parseFloat(cropLeft.value) || 0) / vwReal;
+                const cR = (parseFloat(cropRight.value) || 0) / vwReal;
+
+                const videoLeft = (canvasW / 2) - (fw / 2);
+                const videoTop = (canvasH / 2) - (fh / 2);
+                const holeLeft = videoLeft + (fw * cL);
+                const holeRight = videoLeft + fw - (fw * cR);
+                const holeTop = videoTop + (fh * cT);
+                const holeBottom = videoTop + fh - (fh * cB);
+
+                const pLeftOut = Math.max(0, (holeLeft - fadePx) / canvasW * 100);
+                const pLeftIn = holeLeft / canvasW * 100;
+                const pRightIn = holeRight / canvasW * 100;
+                const pRightOut = Math.min(100, (holeRight + fadePx) / canvasW * 100);
+
+                const pTopOut = Math.max(0, (holeTop - fadePx) / canvasH * 100);
+                const pTopIn = holeTop / canvasH * 100;
+                const pBottomIn = holeBottom / canvasH * 100;
+                const pBottomOut = Math.min(100, (holeBottom + fadePx) / canvasH * 100);
+
+                const gradientX = `linear-gradient(to right, transparent ${pLeftOut}%, black ${pLeftIn}%, black ${pRightIn}%, transparent ${pRightOut}%)`;
+                const gradientY = `linear-gradient(to bottom, transparent ${pTopOut}%, black ${pTopIn}%, black ${pBottomIn}%, transparent ${pBottomOut}%)`;
+
+                ambientCanvas.style.webkitMaskImage = `${gradientX}, ${gradientY}`;
+                ambientCanvas.style.webkitMaskComposite = 'source-in'; 
+                ambientCanvas.style.maskImage = `${gradientX}, ${gradientY}`;
+                ambientCanvas.style.maskComposite = 'intersect';
+            }
+        }
+
+        function updateSliderMax() {
+        if (nativeWidth && nativeHeight) {
+            const trueWidth = nativeWidth;
+            const trueHeight = nativeHeight;
+                
+                const dpr = window.devicePixelRatio || 1;
+                const scaleX = (window.innerWidth * dpr) / trueWidth;
+                const scaleY = (window.innerHeight * dpr) / trueHeight;
+                currentFitScale = Math.min(scaleX, scaleY);
+                
+                sizeSlider.min = Math.min(0.5, currentFitScale).toFixed(2);
+                sizeSlider.max = Math.max(3, currentFitScale).toFixed(2);
+                
+                if (parseFloat(sizeSlider.value) > parseFloat(sizeSlider.max)) {
+                    sizeSlider.value = sizeSlider.max;
+                    updateVideoSize(sizeSlider.value);
+                } else if (parseFloat(sizeSlider.value) < parseFloat(sizeSlider.min)) {
+                    sizeSlider.value = sizeSlider.min;
+                    updateVideoSize(sizeSlider.value);
+                }
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            updateSliderMax();
+        });
+
+        sizeSlider.addEventListener('input', function(e) {
+            updateVideoSize(e.target.value);
+        });
+
+        sizeSlider.addEventListener('wheel', function(e) {
+            e.preventDefault(); // Prevents the page from scrolling
+            e.deltaY < 0 ? this.stepUp() : this.stepDown();
+            this.dispatchEvent(new Event('input'));
+        });
+
+        let isMuted = false;
+        let preMuteVolume = 1;
+
+        function updateMuteUI(muted) {
+            const waves = document.getElementById('volWaves');
+            const muteLine = document.getElementById('volMuteLine');
+            if (muted) {
+                if (waves) waves.style.display = 'none';
+                if (muteLine) muteLine.style.display = 'block';
+                muteIcon.style.opacity = '0.5';
+            } else {
+                if (waves) waves.style.display = 'block';
+                if (muteLine) muteLine.style.display = 'none';
+                muteIcon.style.opacity = '1';
+            }
+        }
+
+        muteIcon.addEventListener('click', () => {
+            if (!isMuted) {
+                preMuteVolume = volumeSlider.value;
+                volumeSlider.value = 0;
+            } else {
+                // If they muted at 0, default to 100% when unmuting so they actually hear sound
+                volumeSlider.value = preMuteVolume > 0 ? preMuteVolume : 1; 
+            }
+            volumeSlider.dispatchEvent(new Event('input')); // Force the slider update to ripple out
+        });
+
+        volumeSlider.addEventListener('input', function(e) {
+            const val = parseFloat(e.target.value);
+            volumeValue.innerText = Math.round(val * 100);
+            if (gainNode) gainNode.gain.value = val;
+            
+            // Auto-sync the UI icon if the user drags the slider manually
+            if (val > 0 && isMuted) {
+                isMuted = false;
+                updateMuteUI(false);
+            } else if (val === 0 && !isMuted) {
+                isMuted = true;
+                updateMuteUI(true);
+            }
+        });
+
+        volumeSlider.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            e.deltaY < 0 ? this.stepUp(5) : this.stepDown(5);
+            this.dispatchEvent(new Event('input'));
+        });
+
+        // Batch apply wheel support to all crop input fields
+        [cropTop, cropBottom, cropLeft, cropRight].forEach(input => {
+            input.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                e.deltaY < 0 ? this.stepUp() : this.stepDown();
+                this.dispatchEvent(new Event('input')); // Auto-triggers the linkTB/linkLR logic!
+            });
+        });
+
+        btnFit.addEventListener('click', function() {
+            if (nativeWidth && nativeHeight) {
+                sizeSlider.value = currentFitScale;
+                updateVideoSize(currentFitScale);
+            }
+        });
+
+        document.addEventListener('keydown', function(e) {
+            if (e.target.tagName === 'INPUT') return;
+
+            if (e.code === 'Space') {
+                e.preventDefault();
+                if (videoPlayer.paused && videoPlayer.readyState > 0) {
+                    videoPlayer.play();
+                } else if (!videoPlayer.paused) {
+                    videoPlayer.pause();
+                }
+            } else if (e.code === 'ArrowLeft') {
+                videoPlayer.currentTime -= 5;
+            } else if (e.code === 'ArrowRight') {
+                videoPlayer.currentTime += 5;
+            }
+        });
+
+        function resetIdleTimer(e) {
+            document.body.style.cursor = 'default'; 
+            clearTimeout(hideTimeout);
+            
+            const isTopCenterEdge = e && e.clientY <= 60 && e.clientX > window.innerWidth * 0.3 && e.clientX < window.innerWidth * 0.7;
+            const isBottomCenterEdge = e && e.clientY >= window.innerHeight - 70 && e.clientX > window.innerWidth * 0.2 && e.clientX < window.innerWidth * 0.8;
+            const isOverControlBar = e && controlBar.contains(e.target);
+            const isOverBottomBar = e && bottomControlBar.contains(e.target);
+            const isOverVideoArea = !e || e.target === videoPlayer || playOverlay.contains(e.target) || isOverControlBar || isOverBottomBar || isTopCenterEdge || isBottomCenterEdge;
+            
+            if (isOverVideoArea) {
+                controlBar.classList.remove('hidden');
+                bottomControlBar.classList.remove('hidden');
+            }
+            
+            // Only start the hide countdown if the mouse is NOT resting on either toolbar
+            if (!isOverControlBar && !isOverBottomBar) {
+                hideTimeout = setTimeout(() => {
+                    controlBar.classList.add('hidden');
+                    bottomControlBar.classList.add('hidden');
+                    document.body.style.cursor = 'none'; 
+                    if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
+                }, 1500); 
+            }
+        }
+
+        document.addEventListener('mousemove', resetIdleTimer);
+    resetIdleTimer();
+
+    // Hide toolbar when clicking the background
+    document.addEventListener('mousedown', function(e) {
+        const isOverControlBar = controlBar.contains(e.target);
+        const isOverBottomBar = bottomControlBar.contains(e.target);
+        const isOverVideo = e.target === videoPlayer;
+        const isOverOverlay = playOverlay.contains(e.target);
+        
+        if (!isOverControlBar && !isOverBottomBar && !isOverVideo && !isOverOverlay) {
+            controlBar.classList.add('hidden');
+            bottomControlBar.classList.add('hidden');
+            document.body.style.cursor = 'none';
+            if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
+        }
+    });
+</script>
+
+</body>
+</html>
