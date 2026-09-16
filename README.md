@@ -11,7 +11,7 @@ Standalone desktop media players like VLC often lack native support for modern G
 
 ## Why This Exists
 
-Trying to play upscaled local videos on Windows the way streaming videos upscale is a nightmare. Getting your $1000+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring bloated media players or obscure plugins that don't even end up working half the time.
+Trying to play upscaled local videos on Windows the way streaming videos upscale is a sh**show nightmare. Getting your $1000+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring bloated media players or obscure plugins that don't even end up working half the time.
 
 SSVidPlayer exists for one core purpose: **to make local video AI upscaling effortless.**
 
