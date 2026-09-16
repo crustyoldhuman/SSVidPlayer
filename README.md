@@ -30,7 +30,7 @@ Browsers natively support hardware AI upscaling (like NVIDIA RTX Video Super Res
   * Auto-hiding, distraction-free UI.
 * **100% Local & Private:** Runs entirely in your browser via `URL.createObjectURL`. No servers, no tracking, no uploads.
 
-## 🛠️ How to Use
+## How to Use
 
 No installation, no build steps, and no server required.
 
@@ -40,7 +40,7 @@ No installation, no build steps, and no server required.
 4. (Optional) Drag and drop an `.srt` file to instantly load subtitles. Adjust timing with Sub-Sync controls.
 5. Use the **Vid Size** slider to scale the video and trigger your browser's native super sampling.
 
-## ⌨️ Shortcuts & Controls
+## Shortcuts & Controls
 
 * **Spacebar:** Play / Pause
 * **Single Click on player:** Play / Pause
@@ -49,7 +49,7 @@ No installation, no build steps, and no server required.
 * **Double Click on player:** Open file browser to load new media.
 * **Click & Drag (Subtitles):** Reposition subtitles anywhere on the screen.
 
-## ⚙️ Technical Stack
+## Technical Stack
 
 * Vanilla HTML5, CSS3, and JavaScript.
 * Utilizes the native HTML5 `<video>` and `<track>` APIs.
