@@ -287,7 +287,7 @@
                 <select id="subSelect" style="display: none;"></select>
                 <div id="offsetGroup" style="display: none; align-items: center; gap: 5px;">
                     <label for="subOffset" style="font-size: 13px;">Sub-Sync:</label>
-                    <span id="offsetSign" style="font-size: 16px; font-weight: bold; width: 12px; text-align: center; color: #4ade80; cursor: pointer; user-select: none;" title="Click to flip sign">+</span>
+                    <span id="offsetSign" style="font-size: 16px; font-weight: bold; width: 12px; text-align: center; color: #ffffff; cursor: pointer; user-select: none;" title="Click to flip sign"></span>
                     <input type="number" id="subOffset" step="0.25" min="0" value="0" title="Offset in seconds" style="width: 50px; background-color: #333333; color: #ffffff; border: 1px solid #666666; border-radius: 4px; padding: 2px 4px;">
                     <span style="font-size: 13px;">s</span>
                 </div>
@@ -588,7 +588,7 @@
                     subOffset.value = 0;
                     currentSyncOffset = 0;
                     const os = document.getElementById('offsetSign');
-                    if (os) { os.innerText = '+'; os.style.color = '#4ade80'; }
+                    if (os) { os.innerText = ''; }
                 }
                 
                 for (let i = 0; i < tracks.length; i++) {
@@ -816,7 +816,10 @@
             if (delta === 0) return; 
 
             // 1. Update UI colors & symbols (forces the box to only show absolute value)
-            if (newOffset >= 0) {
+            if (newOffset === 0) {
+                signSpan.innerText = '';
+                subOffset.value = 0;
+            } else if (newOffset > 0) {
                 signSpan.innerText = '+';
                 signSpan.style.color = '#4ade80'; // Green
                 subOffset.value = newOffset;
