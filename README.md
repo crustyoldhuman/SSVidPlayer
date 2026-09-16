@@ -13,7 +13,7 @@ Trying to play upscaled local videos on Windows the way streaming videos upscale
 
 SSVidPlayer exists for one core purpose: **to make local video AI upscaling effortless.**
 
-By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the browser's native hardware upscaling and applies it to your local media just like it would a web stream. 
+By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the browser's native hardware upscaling and applies it to your local media just like it would a web stream. If your upscaling works on YouTube or other streaming videos, it will work on SSVidPlayer as well.
 
 All the other bells and whistles are just cherries on top of that core purpose.
 
