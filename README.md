@@ -4,8 +4,7 @@
 
 A lightweight, zero-dependency HTML5 video player designed to apply native browser AI video upscaling (like NVIDIA RTX Video Super Resolution) to your local `.mp4` files, all while remaining entirely local and privacy-respecting. 
 
-<p align="center"><img width="900" alt="DefaultPageScreenie" src="https://github.com/user-attachments/assets/9c48b3db-a3ea-430c-8d4b-8549d1b6662b" /></p>
-
+<p align="center"><img width="900" alt="DefaultPageScreenie" src="https://github.com/user-attachments/assets/6696d7c6-3e21-4b2c-abbe-9e9000d28149" /></p>
 
 ## Why This Exists
 
@@ -17,7 +16,7 @@ By running local files through a custom HTML5 wrapper, SSVidPlayer utilizes the 
 
 All the other bells and whistles are just cherries on top of that core purpose.
 
-<p align="center"><img width="900" alt="VidPlayingScreenie" src="https://github.com/user-attachments/assets/754ac2ad-52a5-415b-8e55-98a59f39fb5d" /></p>
+<p align="center"><img width="900" alt="VidPlayingScreenie" src="https://github.com/user-attachments/assets/7c018495-d111-4a03-8994-733c2f91ec5d" /></p>
 
 ## Other Features
 
