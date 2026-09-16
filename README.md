@@ -32,7 +32,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
   * Real-time **Sub-Sync** offset (click the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond).
   * Draggable subtitles (click and move text anywhere on the screen).
   * Adjustable subtitle font size.
-* **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters.
+* **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider (added after above screenshot).
 * **Broad Media Support:** Plays `.mp4`, `.mkv`, and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files. 
 * **Power User Controls:**
   * Scroll-wheel support for volume, size, and cropping values.
