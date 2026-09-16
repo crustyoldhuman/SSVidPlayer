@@ -244,6 +244,35 @@
         .draggable-sub:empty {
             display: none;
         }
+
+        .playback-indicator {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.8);
+            background: rgba(0, 0, 0, 0.6);
+            border-radius: 50%;
+            width: 80px;
+            height: 80px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 150;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.5s ease, transform 0.5s ease;
+            color: white;
+        }
+        .playback-indicator.show {
+            opacity: 1;
+            transform: translate(-50%, -50%) scale(1.1);
+            transition: opacity 0.1s ease, transform 0.1s ease;
+        }
+        .playback-indicator svg {
+            width: 40px;
+            height: 40px;
+            fill: currentColor;
+        }
     </style>
 </head>
 <body>
@@ -279,8 +308,13 @@
                 <button id="btnCropToggle">Crop edges</button>
             </div>
             
-            <div class="ui-group">
-                <input type="checkbox" id="ambientToggle"> <label for="ambientToggle">Glow</label>
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
+                <div class="ui-group">
+                    <input type="checkbox" id="ambientToggle"> <label for="ambientToggle">Glow</label>
+                </div>
+                <div id="glowIntensityGroup" style="display: none;">
+                    <input type="range" id="glowSlider" min="1" max="100" value="75" style="width: 70px;" title="Glow Intensity">
+                </div>
             </div>
         </div>
         <div class="crop-row" id="cropControls" style="display: none; gap: 20px; align-items: center; justify-content: center; width: 100%; flex-wrap: wrap;">
@@ -344,6 +378,12 @@
     <video width="640" id="videoPlayer" crossorigin="anonymous">
         Your browser does not support the video tag.
     </video>
+    
+    <div id="playbackIndicator" class="playback-indicator">
+        <svg id="indicatorPlay" style="display: none; margin-left: 6px;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+        <svg id="indicatorPause" style="display: none;" viewBox="0 0 24 24"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
+    </div>
+
     <div id="customSubContainer" class="draggable-sub"></div>
 
     <script>
@@ -394,6 +434,8 @@
         let currentSyncOffset = 0; // Tracks the current active time shift applied to cues
         
         const ambientToggle = document.getElementById('ambientToggle');
+        const glowIntensityGroup = document.getElementById('glowIntensityGroup');
+        const glowSlider = document.getElementById('glowSlider');
         const ambientCanvas = document.getElementById('ambientCanvas');
         const ambientCtx = ambientCanvas.getContext('2d', { alpha: false });
 
@@ -935,9 +977,11 @@
         function manageAmbientState() {
         if (!isAmbientEnabled || document.fullscreenElement) {
             ambientCanvas.classList.add('hidden');
+            ambientCanvas.style.opacity = ''; // Clears inline style so CSS fade out works
             cancelAnimationFrame(ambientAnimId);
         } else if (videoPlayer.readyState > 0) {
             ambientCanvas.classList.remove('hidden');
+            ambientCanvas.style.opacity = glowSlider.value / 100;
             isFirstFrame = true;
             drawAmbientFrame();
             if (!videoPlayer.paused) {
@@ -1041,7 +1085,20 @@ function resizeAmbientCanvas() {
 
         ambientToggle.addEventListener('change', (e) => {
             isAmbientEnabled = e.target.checked;
+            glowIntensityGroup.style.display = isAmbientEnabled ? 'block' : 'none';
             manageAmbientState();
+        });
+
+        glowSlider.addEventListener('input', (e) => {
+            if (isAmbientEnabled) {
+                ambientCanvas.style.opacity = e.target.value / 100;
+            }
+        });
+
+        glowSlider.addEventListener('wheel', function(e) {
+            e.preventDefault();
+            e.deltaY < 0 ? this.stepUp(5) : this.stepDown(5);
+            this.dispatchEvent(new Event('input'));
         });
 
         document.addEventListener('fullscreenchange', manageAmbientState);
@@ -1078,10 +1135,32 @@ function resizeAmbientCanvas() {
             }
         });
 
+        let indicatorTimeout;
+        const playbackIndicator = document.getElementById('playbackIndicator');
+        const indicatorPlay = document.getElementById('indicatorPlay');
+        const indicatorPause = document.getElementById('indicatorPause');
+
+        function showIndicator(isPlay) {
+            clearTimeout(indicatorTimeout);
+            indicatorPlay.style.display = isPlay ? 'block' : 'none';
+            indicatorPause.style.display = isPlay ? 'none' : 'block';
+            
+            playbackIndicator.classList.add('show');
+            
+            indicatorTimeout = setTimeout(() => {
+                playbackIndicator.classList.remove('show');
+            }, 2000);
+        }
+
         videoPlayer.addEventListener('click', function() {
             if (videoPlayer.readyState > 0) {
-                if (videoPlayer.paused) videoPlayer.play();
-                else videoPlayer.pause();
+                if (videoPlayer.paused) {
+                    videoPlayer.play();
+                    showIndicator(true);
+                } else {
+                    videoPlayer.pause();
+                    showIndicator(false);
+                }
             }
         });
 
@@ -1174,23 +1253,32 @@ function resizeAmbientCanvas() {
                 const holeTop = videoTop + (fh * cT);
                 const holeBottom = videoTop + fh - (fh * cB);
 
-                const pLeftOut = Math.max(0, (holeLeft - fadePx) / canvasW * 100);
-                const pLeftIn = holeLeft / canvasW * 100;
-                const pRightIn = holeRight / canvasW * 100;
-                const pRightOut = Math.min(100, (holeRight + fadePx) / canvasW * 100);
+                // Calculate visible dimensions (accounting for your crop logic)
+                const visibleW = holeRight - holeLeft;
+                const visibleH = holeBottom - holeTop;
+                
+                // Find the center percentage of the video on the oversized canvas
+                const centerX = (holeLeft + (visibleW / 2)) / canvasW * 100;
+                const centerY = (holeTop + (visibleH / 2)) / canvasH * 100;
 
-                const pTopOut = Math.max(0, (holeTop - fadePx) / canvasH * 100);
-                const pTopIn = holeTop / canvasH * 100;
-                const pBottomIn = holeBottom / canvasH * 100;
-                const pBottomOut = Math.min(100, (holeBottom + fadePx) / canvasH * 100);
+                // fadeScale dictates how far out the oval glow reaches. 
+                // 2.2 means the fade extends 1.2x the radius of the video outward.
+                // This scales proportionally rather than relying on a hardcoded pixel distance.
+                const fadeScale = 2.2; 
+                const radiusX = (visibleW / 2) * fadeScale;
+                const radiusY = (visibleH / 2) * fadeScale;
+                
+                // Calculate where the solid black should stop so it hides the raw video edges
+                const innerStop = (1 / fadeScale) * 100;
 
-                const gradientX = `linear-gradient(to right, transparent ${pLeftOut}%, black ${pLeftIn}%, black ${pRightIn}%, transparent ${pRightOut}%)`;
-                const gradientY = `linear-gradient(to bottom, transparent ${pTopOut}%, black ${pTopIn}%, black ${pBottomIn}%, transparent ${pBottomOut}%)`;
+                const radialMask = `radial-gradient(${radiusX}px ${radiusY}px at ${centerX}% ${centerY}%, black 0%, black ${innerStop}%, transparent 100%)`;
 
-                ambientCanvas.style.webkitMaskImage = `${gradientX}, ${gradientY}`;
-                ambientCanvas.style.webkitMaskComposite = 'source-in'; 
-                ambientCanvas.style.maskImage = `${gradientX}, ${gradientY}`;
-                ambientCanvas.style.maskComposite = 'intersect';
+                ambientCanvas.style.webkitMaskImage = radialMask;
+                ambientCanvas.style.maskImage = radialMask;
+                
+                // Clear the old intersection composites, as we only need one mask shape now
+                ambientCanvas.style.webkitMaskComposite = ''; 
+                ambientCanvas.style.maskComposite = '';
             }
         }
 
