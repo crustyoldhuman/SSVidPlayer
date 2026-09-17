@@ -74,4 +74,4 @@ All the other bells and whistles are just cherries on top of that core purpose.
 * File API for local blob handling.
 
 ---
-*Developed by [crustyoldhuman](https://github.com/crustyoldhuman)*
+*By [crustyoldhuman](https://github.com/crustyoldhuman)*
