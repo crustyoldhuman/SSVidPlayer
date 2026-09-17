@@ -64,6 +64,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 * `srt`files are required for subtitles. Embedded subtitles will not work due to browser limitations. The page is simply blind to embedded subtitles and there is nothing I can do about it.
 * The ambilight glow effect will look wonky if there are any black edges or bars permanently embedded into a playing video file. Use the cropping tool to fix this problem.
 * Currently there is no playlist support, but I could add it if it seems like people would use it. I personally don't need a playlist feature. Drop a message if you'd like a playlist.
+* Due to the limitations of being just a HTML page rather than an extension combined with the inherent limitations of Edge/Chromium browsers and how they pipe out their audio, those browsers sadly do not support the 300% volume boost. 
 
 ## Technical Stack
 
