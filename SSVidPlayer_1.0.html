@@ -312,7 +312,7 @@
                     <input type="checkbox" id="ambientToggle"> <label for="ambientToggle">Glow</label>
                 </div>
                 <div id="glowIntensityGroup" style="display: none;">
-                    <input type="range" id="glowSlider" min="1" max="100" value="75" style="width: 70px;" title="Glow Intensity">
+                    <input type="range" id="glowSlider" min="1" max="100" value="100" style="width: 70px;" title="Glow Intensity">
                 </div>
             </div>
 
@@ -376,9 +376,10 @@
 
     <canvas id="ambientCanvas" class="hidden"></canvas>
     
-    <video width="640" id="videoPlayer">
+    <video width="640" id="videoPlayer" muted>
         Your browser does not support the video tag.
     </video>
+    <audio id="audioPlayer" style="display: none;"></audio>
     
     <div id="playbackIndicator" class="playback-indicator">
         <svg id="indicatorPlay" style="display: none; margin-left: 6px;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
@@ -390,6 +391,7 @@
     <script>
         const videoFileInput = document.getElementById('videoFileInput');
         const videoPlayer = document.getElementById('videoPlayer');
+        const audioPlayer = document.getElementById('audioPlayer');
         const sizeSlider = document.getElementById('sizeSlider');
         const scaleValue = document.getElementById('scaleValue');
         const volumeSlider = document.getElementById('volumeSlider');
@@ -430,6 +432,7 @@
         const btnFullscreen = document.getElementById('btnFullscreen');
         
         let currentVideoUrl = null;
+        let currentAudioUrl = null;
         let currentSrtUrl = null;
         let previousSubSelection = null; // Tracks memory of selections across UI updates
         let currentSyncOffset = 0; // Tracks the current active time shift applied to cues
@@ -545,7 +548,6 @@
         let currentFitScale = 1;
         let audioCtx;
         let gainNode;
-        const isFirefox = navigator.userAgent.toLowerCase().includes('firefox');
 
         window.addEventListener('load', () => {
         videoFileInput.value = '';
@@ -772,14 +774,30 @@
                 if (currentVideoUrl) {
                     URL.revokeObjectURL(currentVideoUrl);
                 }
+                if (currentAudioUrl) {
+                    URL.revokeObjectURL(currentAudioUrl);
+                }
+                
+                // THE VSR FIX: Generate two distinct URLs so Chromium spins up isolated media pipelines.
+                // The video pipeline stays hardware-accelerated (VSR), while the audio pipeline gets hooked for volume.
                 currentVideoUrl = URL.createObjectURL(videoFile);
+                currentAudioUrl = URL.createObjectURL(videoFile);
+                
                 videoPlayer.src = currentVideoUrl;
+                audioPlayer.src = currentAudioUrl;
                 
                 isFirstFrame = true;
 
                 if (srtFile) loadSrt(srtFile);
 
                 videoPlayer.load(); 
+                audioPlayer.load(); 
+
+                // THE FATAL CHROMIUM BUG FIX:
+                // Chromium permanently ignores the Web Audio API if createMediaElementSource is called 
+                // AFTER the media starts playing. We MUST initialize it right here while the audio is completely paused.
+                // Since this now targets the hidden audioPlayer, VSR on the videoPlayer stays perfectly intact.
+                if (!audioCtx) initAudio();
             } else if (srtFile && videoPlayer.src) {
                 loadSrt(srtFile);
             } else {
@@ -917,17 +935,17 @@
             
             const dpr = window.devicePixelRatio || 1;
             const targetScale = (window.innerHeight * 0.70 * dpr) / nativeHeight;
-            
-            // Clamp the scale so it doesn't break the slider's min/max limits
             const clampedScale = Math.max(sizeSlider.min, Math.min(sizeSlider.max, targetScale)).toFixed(2);
             
             sizeSlider.value = clampedScale;
             updateVideoSize(clampedScale);
 
-            volumeSlider.value = 1;
-            volumeValue.innerText = 100;
-            videoPlayer.volume = 1;
-            if (gainNode) gainNode.gain.value = 1;
+            // Fetch volume state on load instead of defaulting to 100%
+            const currentVol = parseFloat(volumeSlider.value);
+            audioPlayer.volume = Math.min(1, currentVol);
+            if (gainNode) {
+                gainNode.gain.value = currentVol;
+            }
 
             videoPlayer.removeAttribute('controls');
             
@@ -938,42 +956,32 @@
             playOverlay.classList.add('ready'); 
             playOverlay.classList.add('visible');
 
-            manageAmbientState(); 
+            manageAmbientState();
 
-            videoPlayer.play().catch(error => {
-                console.log("Autoplay blocked by browser policy. User must initiate playback manually.", error);
-            });
+            // Try to autoplay. If blocked by browser, wait for user.
+            const playPromise = videoPlayer.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    audioPlayer.play().catch(e => console.log("Audio autoplay blocked"));
+                }).catch(error => {
+                    console.log("Autoplay blocked. User must click play.", error);
+                });
+            }
         });
 
         function initAudio() {
             if (!audioCtx) {
-                const AudioContext = window.AudioContext || window.webkitAudioContext;
-                audioCtx = new AudioContext();
-                const source = audioCtx.createMediaElementSource(videoPlayer);
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
                 
-                // Gain node for the volume boost
+                const source = audioCtx.createMediaElementSource(audioPlayer);
                 gainNode = audioCtx.createGain();
-                const currentVol = parseFloat(volumeSlider.value);
-                gainNode.gain.value = currentVol > 1 
-                    ? (isFirefox ? Math.pow(currentVol, 2) : Math.pow(currentVol, 3)) 
-                    : currentVol;
                 
-                // Compressor node to act as a hard limiter
-                const compressor = audioCtx.createDynamicsCompressor();
-                compressor.threshold.value = -1.0; // Start compressing just before clipping
-                compressor.knee.value = 0.0;       // Hard knee (immediate reaction)
-                compressor.ratio.value = 20.0;     // Squash anything that goes over the threshold
-                compressor.attack.value = 0.005;   // React instantly
-                compressor.release.value = 0.05;   // Recover quickly
+                gainNode.gain.value = parseFloat(volumeSlider.value);
                 
-                // Route: Source -> Gain -> Compressor -> Destination
                 source.connect(gainNode);
-                gainNode.connect(compressor);
-                compressor.connect(audioCtx.destination);
+                gainNode.connect(audioCtx.destination);
             }
-            if (audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            if (audioCtx.state === 'suspended') audioCtx.resume();
         }
 
         videoPlayer.addEventListener('error', function() {
@@ -987,49 +995,46 @@
         });
 
         function manageAmbientState() {
-        cancelAnimationFrame(ambientAnimId);
-        if (!isAmbientEnabled || document.fullscreenElement) {
-            ambientCanvas.classList.add('hidden');
-            ambientCanvas.style.opacity = ''; // Clears inline style so CSS fade out works
-        } else if (videoPlayer.readyState > 0) {
-            ambientCanvas.classList.remove('hidden');
-            ambientCanvas.style.opacity = glowSlider.value / 100;
-            isFirstFrame = true;
-            drawAmbientFrame();
-            if (!videoPlayer.paused) {
-                drawAmbientLoop();
+            cancelAnimationFrame(ambientAnimId);
+            if (!isAmbientEnabled || document.fullscreenElement) {
+                ambientCanvas.classList.add('hidden');
+                ambientCanvas.style.opacity = '';
+            } else if (videoPlayer.readyState > 0) {
+                ambientCanvas.classList.remove('hidden');
+                ambientCanvas.style.opacity = glowSlider.value / 100;
+                isFirstFrame = true;
+                drawAmbientFrame();
+                if (!videoPlayer.paused) {
+                    drawAmbientLoop();
+                }
             }
         }
-    }
 
-function resizeAmbientCanvas() {
-        ambientCanvas.width = window.innerWidth / 8;
-        ambientCanvas.height = window.innerHeight / 8;
-        if (videoPlayer.paused && isAmbientEnabled) {
-            isFirstFrame = true;
-            drawAmbientFrame();
+        function resizeAmbientCanvas() {
+            ambientCanvas.width = window.innerWidth / 8;
+            ambientCanvas.height = window.innerHeight / 8;
+            if (videoPlayer.paused && isAmbientEnabled) {
+                isFirstFrame = true;
+                drawAmbientFrame();
+            }
         }
-    }
-    window.addEventListener('resize', resizeAmbientCanvas);
-    resizeAmbientCanvas();
+        window.addEventListener('resize', resizeAmbientCanvas);
+        resizeAmbientCanvas();
 
-    function drawAmbientFrame() {
+        function drawAmbientFrame() {
             if (!nativeWidth || !nativeHeight || videoPlayer.readyState === 0) return;
 
-            // 1. Calculate Crop Bounds in physical video pixels
             const cropTopPx = parseFloat(cropTop.value) || 0;
             const cropBotPx = parseFloat(cropBottom.value) || 0;
             const cropLeftPx = parseFloat(cropLeft.value) || 0;
             const cropRightPx = parseFloat(cropRight.value) || 0;
 
-            // Inset by 3 pixels to safely bypass interpolation from any remaining black bars
             const inset = 3;
             const srcX = cropLeftPx + inset;
             const srcY = cropTopPx + inset;
             const srcW = Math.max(1, nativeWidth - cropLeftPx - cropRightPx - (inset * 2));
             const srcH = Math.max(1, nativeHeight - cropTopPx - cropBotPx - (inset * 2));
 
-            // 2. Setup mapping to the oversized 120vw/120vh CSS canvas
             const cw = ambientCanvas.width;
             const ch = ambientCanvas.height;
             const scale = parseFloat(sizeSlider.value);
@@ -1063,7 +1068,6 @@ function resizeAmbientCanvas() {
 
             ambientCtx.globalAlpha = isFirstFrame ? 1.0 : 0.10;
 
-            // Target exact 1-pixel native video edges
             const sx1 = srcX;
             const sy1 = srcY;
             const sx2 = srcX + srcW - 1;
@@ -1075,10 +1079,10 @@ function resizeAmbientCanvas() {
                 if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, 1, destX3, destY1, dwRight, dhTop);
             }
             if (dhCenter > 0) {
-            if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, 1, srcH, destX1, destY2, dwLeft, dhCenter);
-            if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, srcH, destX2, destY2, dwCenter, dhCenter);
-            if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, srcH, destX3, destY2, dwRight, dhCenter);
-        }
+                if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, 1, srcH, destX1, destY2, dwLeft, dhCenter);
+                if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy1, srcW, srcH, destX2, destY2, dwCenter, dhCenter);
+                if (dwRight > 0) ambientCtx.drawImage(videoPlayer, sx2, sy1, 1, srcH, destX3, destY2, dwRight, dhCenter);
+            }
             if (dhBottom > 0) {
                 if (dwLeft > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, 1, 1, destX1, destY3, dwLeft, dhBottom);
                 if (dwCenter > 0) ambientCtx.drawImage(videoPlayer, sx1, sy2, srcW, 1, destX2, destY3, dwCenter, dhBottom);
@@ -1087,11 +1091,11 @@ function resizeAmbientCanvas() {
             isFirstFrame = false;
         }
 
-    function drawAmbientLoop() {
-        if (videoPlayer.paused || videoPlayer.ended || !isAmbientEnabled || document.fullscreenElement) return;
-        drawAmbientFrame();
-        ambientAnimId = requestAnimationFrame(drawAmbientLoop);
-    }
+        function drawAmbientLoop() {
+            if (videoPlayer.paused || videoPlayer.ended || !isAmbientEnabled || document.fullscreenElement) return;
+            drawAmbientFrame();
+            ambientAnimId = requestAnimationFrame(drawAmbientLoop);
+        }
 
         ambientToggle.addEventListener('change', (e) => {
             isAmbientEnabled = e.target.checked;
@@ -1113,35 +1117,38 @@ function resizeAmbientCanvas() {
 
         document.addEventListener('fullscreenchange', manageAmbientState);
 
+        // --- SYNC ENGINE AND UI CONTROLS ---
+
         videoPlayer.addEventListener('play', function() {
             playOverlay.classList.remove('visible');
             document.getElementById('iconPlay').style.display = 'none';
             document.getElementById('iconPause').style.display = 'block';
             
-            // DISABLED WEB AUDIO TO ALLOW VSR
-            // if (isFirefox) {
-            //     if (!audioCtx) initAudio();
-            // }
-            // 
-            // if (audioCtx && audioCtx.state === 'suspended') {
-            //     audioCtx.resume();
-            // }
+            // Failsafe: Ensure audio turns on when video does
+            if (audioPlayer.paused) {
+                audioPlayer.play().catch(e => console.log("Awaiting user gesture for audio"));
+            }
+            
+            if (!audioCtx) initAudio();
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
             
             manageAmbientState(); 
         });
 
         videoPlayer.addEventListener('pause', function() {
+            audioPlayer.pause();
             document.getElementById('iconPlay').style.display = 'block';
             document.getElementById('iconPause').style.display = 'none';
         });
 
         videoPlayer.addEventListener('seeked', function() {
-            applySubtitleSelection(); // Force subtitle refresh after scrubbing
+            applySubtitleSelection();
         });
 
         playOverlay.addEventListener('click', function() {
             if (videoPlayer.readyState > 0) {
-                videoPlayer.play().catch(e => console.log("Playback interrupted"));
+                videoPlayer.play();
+                audioPlayer.play().catch(e => console.log("Audio sync delayed"));
             }
         });
 
@@ -1165,7 +1172,8 @@ function resizeAmbientCanvas() {
         videoPlayer.addEventListener('click', function() {
             if (videoPlayer.readyState > 0) {
                 if (videoPlayer.paused) {
-                    videoPlayer.play().catch(e => console.log("Playback interrupted"));
+                    videoPlayer.play();
+                    audioPlayer.play().catch(e => console.log("Audio sync delayed"));
                     showIndicator(true);
                 } else {
                     videoPlayer.pause();
@@ -1192,12 +1200,17 @@ function resizeAmbientCanvas() {
         }
 
         btnPlayPause.addEventListener('click', () => {
-            if (videoPlayer.paused) videoPlayer.play().catch(e => console.log("Playback interrupted"));
-            else videoPlayer.pause();
+            if (videoPlayer.paused) {
+                videoPlayer.play();
+                audioPlayer.play().catch(e => console.log("Audio sync delayed"));
+            } else {
+                videoPlayer.pause();
+            }
         });
 
         btnLoop.addEventListener('click', () => {
             videoPlayer.loop = !videoPlayer.loop;
+            audioPlayer.loop = videoPlayer.loop;
             btnLoop.style.backgroundColor = videoPlayer.loop ? '#4ade80' : '#333333';
             btnLoop.style.color = videoPlayer.loop ? '#000000' : '#ffffff';
             btnLoop.style.fontWeight = videoPlayer.loop ? 'bold' : 'normal';
@@ -1208,6 +1221,20 @@ function resizeAmbientCanvas() {
                 seekSlider.value = (videoPlayer.currentTime / videoPlayer.duration) * 100 || 0;
             }
             timeDisplay.innerText = `${formatTime(videoPlayer.currentTime)} / ${formatTime(videoPlayer.duration)}`;
+            
+            // Anti-Drift and Anti-Silence Engine
+            if (!videoPlayer.paused) {
+                if (Math.abs(videoPlayer.currentTime - audioPlayer.currentTime) > 0.15) {
+                    audioPlayer.currentTime = videoPlayer.currentTime;
+                }
+                if (audioPlayer.paused) {
+                    audioPlayer.play().catch(e => {});
+                }
+            }
+        });
+
+        videoPlayer.addEventListener('seeking', () => {
+            audioPlayer.currentTime = videoPlayer.currentTime;
         });
 
         seekSlider.addEventListener('mousedown', () => seekSlider.isDragging = true);
@@ -1217,6 +1244,7 @@ function resizeAmbientCanvas() {
         seekSlider.addEventListener('input', (e) => {
             const seekTime = (parseFloat(e.target.value) / 100) * videoPlayer.duration;
             videoPlayer.currentTime = seekTime;
+            audioPlayer.currentTime = seekTime;
             timeDisplay.innerText = `${formatTime(seekTime)} / ${formatTime(videoPlayer.duration)}`;
         });
 
@@ -1231,14 +1259,11 @@ function resizeAmbientCanvas() {
         });
 
         function updateVideoSize(scale) {
-        if (videoPlayer.readyState === 0) return; // Abort if no video is loaded
-        if (nativeWidth) {
-            const trueWidth = nativeWidth;
-            const trueHeight = nativeHeight;
-                
+            if (videoPlayer.readyState === 0) return;
+            if (nativeWidth) {
                 const dpr = window.devicePixelRatio || 1;
-                const fw = (trueWidth * scale) / dpr;
-                const fh = (trueHeight * scale) / dpr;
+                const fw = (nativeWidth * scale) / dpr;
+                const fh = (nativeHeight * scale) / dpr;
 
                 videoPlayer.style.width = fw + 'px';
                 videoPlayer.style.height = fh + 'px';
@@ -1246,8 +1271,6 @@ function resizeAmbientCanvas() {
                 
                 const canvasW = window.innerWidth * 1.2;
                 const canvasH = window.innerHeight * 1.2;
-                const fadePx = 400; 
-
                 const vwReal = videoPlayer.videoWidth || nativeWidth || 1;
                 const vhReal = videoPlayer.videoHeight || nativeHeight || 1;
 
@@ -1263,43 +1286,31 @@ function resizeAmbientCanvas() {
                 const holeTop = videoTop + (fh * cT);
                 const holeBottom = videoTop + fh - (fh * cB);
 
-                // Calculate visible dimensions (accounting for your crop logic)
                 const visibleW = holeRight - holeLeft;
                 const visibleH = holeBottom - holeTop;
                 
-                // Find the center percentage of the video on the oversized canvas
                 const centerX = (holeLeft + (visibleW / 2)) / canvasW * 100;
                 const centerY = (holeTop + (visibleH / 2)) / canvasH * 100;
 
-                // fadeScale dictates how far out the oval glow reaches. 
-                // 2.2 means the fade extends 1.2x the radius of the video outward.
-                // This scales proportionally rather than relying on a hardcoded pixel distance.
                 const fadeScale = 2.2; 
                 const radiusX = (visibleW / 2) * fadeScale;
                 const radiusY = (visibleH / 2) * fadeScale;
-                
-                // Calculate where the solid black should stop so it hides the raw video edges
                 const innerStop = (1 / fadeScale) * 100;
 
                 const radialMask = `radial-gradient(${radiusX}px ${radiusY}px at ${centerX}% ${centerY}%, black 0%, black ${innerStop}%, transparent 100%)`;
 
                 ambientCanvas.style.webkitMaskImage = radialMask;
                 ambientCanvas.style.maskImage = radialMask;
-                
-                // Clear the old intersection composites, as we only need one mask shape now
                 ambientCanvas.style.webkitMaskComposite = ''; 
                 ambientCanvas.style.maskComposite = '';
             }
         }
 
         function updateSliderMax() {
-        if (nativeWidth && nativeHeight) {
-            const trueWidth = nativeWidth;
-            const trueHeight = nativeHeight;
-                
+            if (nativeWidth && nativeHeight) {
                 const dpr = window.devicePixelRatio || 1;
-                const scaleX = (window.innerWidth * dpr) / trueWidth;
-                const scaleY = (window.innerHeight * dpr) / trueHeight;
+                const scaleX = (window.innerWidth * dpr) / nativeWidth;
+                const scaleY = (window.innerHeight * dpr) / nativeHeight;
                 currentFitScale = Math.min(scaleX, scaleY);
                 
                 sizeSlider.min = Math.min(0.5, currentFitScale).toFixed(2);
@@ -1324,7 +1335,7 @@ function resizeAmbientCanvas() {
         });
 
         sizeSlider.addEventListener('wheel', function(e) {
-            e.preventDefault(); // Prevents the page from scrolling
+            e.preventDefault();
             e.deltaY < 0 ? this.stepUp() : this.stepDown();
             this.dispatchEvent(new Event('input'));
         });
@@ -1351,10 +1362,9 @@ function resizeAmbientCanvas() {
                 preMuteVolume = volumeSlider.value;
                 volumeSlider.value = 0;
             } else {
-                // If they muted at 0, default to 100% when unmuting so they actually hear sound
                 volumeSlider.value = preMuteVolume > 0 ? preMuteVolume : 1; 
             }
-            volumeSlider.dispatchEvent(new Event('input')); // Force the slider update to ripple out
+            volumeSlider.dispatchEvent(new Event('input')); 
         });
 
         volumeSlider.addEventListener('input', function(e) {
@@ -1362,12 +1372,9 @@ function resizeAmbientCanvas() {
             volumeValue.innerText = Math.round(val * 100);
             
             if (gainNode) {
-                // DO NOT touch videoPlayer.volume here. Chromium multiplies videoPlayer.volume 
-                // by the gainNode, which was causing your insane volume drops (double-attenuation).
-                // Edge/Chrome's compressor squashes audio much harder than Firefox's, so we push a higher multiplier.
-                gainNode.gain.value = val > 1 ? (isFirefox ? Math.pow(val, 2) : Math.pow(val, 3)) : val;
+                gainNode.gain.value = val;
             } else {
-                videoPlayer.volume = Math.min(1, val);
+                audioPlayer.volume = Math.min(1, val);
             }
             
             if (audioCtx && audioCtx.state === 'suspended') {
@@ -1389,15 +1396,6 @@ function resizeAmbientCanvas() {
             this.dispatchEvent(new Event('input'));
         });
 
-        // Batch apply wheel support to all crop input fields
-        [cropTop, cropBottom, cropLeft, cropRight].forEach(input => {
-            input.addEventListener('wheel', function(e) {
-                e.preventDefault();
-                e.deltaY < 0 ? this.stepUp() : this.stepDown();
-                this.dispatchEvent(new Event('input')); // Auto-triggers the linkTB/linkLR logic!
-            });
-        });
-
         btnFit.addEventListener('click', function() {
             if (nativeWidth && nativeHeight) {
                 sizeSlider.value = currentFitScale;
@@ -1411,7 +1409,8 @@ function resizeAmbientCanvas() {
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (videoPlayer.paused && videoPlayer.readyState > 0) {
-                    videoPlayer.play().catch(e => console.log("Playback interrupted"));
+                    videoPlayer.play();
+                    audioPlayer.play().catch(err => console.log(err));
                 } else if (!videoPlayer.paused) {
                     videoPlayer.pause();
                 }
@@ -1423,9 +1422,7 @@ function resizeAmbientCanvas() {
         });
 
         function resetIdleTimer(e) {
-            if (document.body.style.cursor !== 'default') {
-                document.body.style.cursor = 'default'; 
-            }
+            document.body.style.cursor = 'default'; 
             clearTimeout(hideTimeout);
             
             const isTopCenterEdge = e && e.clientY <= 60 && e.clientX > window.innerWidth * 0.3 && e.clientX < window.innerWidth * 0.7;
@@ -1439,7 +1436,6 @@ function resizeAmbientCanvas() {
                 bottomControlBar.classList.remove('hidden');
             }
             
-            // Only start the hide countdown if the mouse is NOT resting on either toolbar
             if (!isOverControlBar && !isOverBottomBar) {
                 hideTimeout = setTimeout(() => {
                     controlBar.classList.add('hidden');
@@ -1451,22 +1447,21 @@ function resizeAmbientCanvas() {
         }
 
         document.addEventListener('mousemove', resetIdleTimer);
-    resetIdleTimer();
+        resetIdleTimer();
 
-    // Hide toolbar when clicking the background
-    document.addEventListener('mousedown', function(e) {
-        const isOverControlBar = controlBar.contains(e.target);
-        const isOverBottomBar = bottomControlBar.contains(e.target);
-        const isOverVideo = e.target === videoPlayer;
-        const isOverOverlay = playOverlay.contains(e.target);
-        
-        if (!isOverControlBar && !isOverBottomBar && !isOverVideo && !isOverOverlay) {
-            controlBar.classList.add('hidden');
-            bottomControlBar.classList.add('hidden');
-            document.body.style.cursor = 'none';
-            if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
-        }
-    });
+        document.addEventListener('mousedown', function(e) {
+            const isOverControlBar = controlBar.contains(e.target);
+            const isOverBottomBar = bottomControlBar.contains(e.target);
+            const isOverVideo = e.target === videoPlayer;
+            const isOverOverlay = playOverlay.contains(e.target);
+            
+            if (!isOverControlBar && !isOverBottomBar && !isOverVideo && !isOverOverlay) {
+                controlBar.classList.add('hidden');
+                bottomControlBar.classList.add('hidden');
+                document.body.style.cursor = 'none';
+                if (typeof cropControls !== 'undefined') cropControls.style.display = 'none';
+            }
+        });
 </script>
 
 </body>
