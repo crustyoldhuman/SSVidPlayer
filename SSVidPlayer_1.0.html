@@ -376,7 +376,7 @@
 
     <canvas id="ambientCanvas" class="hidden"></canvas>
     
-    <video width="640" id="videoPlayer" crossorigin="anonymous">
+    <video width="640" id="videoPlayer">
         Your browser does not support the video tag.
     </video>
     
@@ -506,12 +506,24 @@
         function applyVideoCrop() {
             if (videoPlayer.readyState === 0) return; // Abort if no video is loaded
             if (!nativeWidth || !nativeHeight) return;
-            const t = (parseFloat(cropTop.value) || 0) / nativeHeight * 100;
-            const r = (parseFloat(cropRight.value) || 0) / nativeWidth * 100;
-            const b = (parseFloat(cropBottom.value) || 0) / nativeHeight * 100;
-            const l = (parseFloat(cropLeft.value) || 0) / nativeWidth * 100;
             
-            videoPlayer.style.clipPath = `inset(${t}% ${r}% ${b}% ${l}%)`;
+            const cropT = parseFloat(cropTop.value) || 0;
+            const cropR = parseFloat(cropRight.value) || 0;
+            const cropB = parseFloat(cropBottom.value) || 0;
+            const cropL = parseFloat(cropLeft.value) || 0;
+
+            const t = cropT / nativeHeight * 100;
+            const r = cropR / nativeWidth * 100;
+            const b = cropB / nativeHeight * 100;
+            const l = cropL / nativeWidth * 100;
+            
+            // FIX: If crop is 0, explicitly remove clip-path to restore the hardware overlay!
+            if (cropT === 0 && cropR === 0 && cropB === 0 && cropL === 0) {
+                videoPlayer.style.clipPath = 'none';
+            } else {
+                videoPlayer.style.clipPath = `inset(${t}% ${r}% ${b}% ${l}%)`;
+            }
+            
             updateVideoSize(sizeSlider.value); 
         }
 
@@ -730,11 +742,11 @@
             }
 
             if (videoFile) {
-                // CHROME/EDGE: Initialize Web Audio BEFORE setting source so it doesn't bypass.
-                // Firefox doesn't need this and uses your original safe method.
-                if (!isFirefox) {
-                    initAudio(); 
-                }
+                // DISABLED WEB AUDIO: 
+                // createMediaElementSource breaks hardware overlays in Chromium, killing VSR.
+                // if (!isFirefox) {
+                //     initAudio(); 
+                // }
                 
                 filenameDisplay.innerText = videoFile.name; // Display the active file name
                 removeManualTrack();
@@ -1106,14 +1118,14 @@ function resizeAmbientCanvas() {
             document.getElementById('iconPlay').style.display = 'none';
             document.getElementById('iconPause').style.display = 'block';
             
-            // FIREFOX: Initialize Web Audio on play (your original, robust method)
-            if (isFirefox) {
-                if (!audioCtx) initAudio();
-            }
-            
-            if (audioCtx && audioCtx.state === 'suspended') {
-                audioCtx.resume();
-            }
+            // DISABLED WEB AUDIO TO ALLOW VSR
+            // if (isFirefox) {
+            //     if (!audioCtx) initAudio();
+            // }
+            // 
+            // if (audioCtx && audioCtx.state === 'suspended') {
+            //     audioCtx.resume();
+            // }
             
             manageAmbientState(); 
         });
