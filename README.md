@@ -47,7 +47,8 @@ All the other bells and whistles are just cherries on top of that core purpose.
 2. Open `SSVidPlayer.html` in your browser of choice (Firefox/Chrome/Edge recommended for RTX VSR).
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
 4. (Optional) Drag and drop an `.srt` file to instantly load subtitles. Adjust timing with **Sub-Sync** controls.
-5. `.mp4` FILES ARE HEAVILY SUGGESTED. You may get mixed results with other filetypes depending how they were encoded, but all `.mp4`s should work. 
+5. You can drag and drop the video file and `.srt` file at the same time or separately. 
+6. `.mp4` FILES ARE HEAVILY SUGGESTED. You may get mixed results with other filetypes depending how they were encoded, but all `.mp4`s should work. 
 
 ## Shortcuts & Controls
 
@@ -57,6 +58,12 @@ All the other bells and whistles are just cherries on top of that core purpose.
 * **Scroll Wheel (over inputs):** Adjust volume, zoom, sync offsets, and cropping pixel by pixel.
 * **Double Click on player:** Open file browser to load new media.
 * **Click & Drag (Subtitles):** Reposition subtitles anywhere on the screen.
+
+## Known Limitations
+
+* `srt`files are required for subtitles. Embedded subtitles will not work due to browser limitations. The page is simply blind to embedded subtitles and there is nothing I can do about it.
+* The ambilight glow effect will look wonky if there are any black edges or bars permanently embedded into a playing video file. Use the cropping tool to fix this problem.
+* Currently there is no playlist support, but I could add it if it seems like people would use it. I personally don't need a playlist feature. Drop a message if you'd like a playlist.
 
 ## Technical Stack
 
