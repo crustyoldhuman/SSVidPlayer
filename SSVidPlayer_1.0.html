@@ -286,9 +286,9 @@
                 <button id="btnSubtitles">Load Subtitles</button>
                 <select id="subSelect" style="display: none;"></select>
                 <div id="offsetGroup" style="display: none; align-items: center; gap: 5px;">
-                    <label for="subOffset" style="font-size: 13px;">Sub-Sync:</label>
+                    <label id="subSyncLabel" for="subOffset" style="font-size: 13px; user-select: none;">Sub-Sync:</label>
                     <span id="offsetSign" style="font-size: 16px; font-weight: bold; width: 12px; text-align: center; color: #ffffff; cursor: pointer; user-select: none;" title="Click to flip sign"></span>
-                    <input type="number" id="subOffset" step="0.25" min="0" value="0" title="Offset in seconds" style="width: 50px; background-color: #333333; color: #ffffff; border: 1px solid #666666; border-radius: 4px; padding: 2px 4px;">
+                    <input type="number" id="subOffset" step="0.1" value="0" title="Offset in seconds" style="width: 50px; background-color: #333333; color: #ffffff; border: 1px solid #666666; border-radius: 4px; padding: 2px 4px;">
                     <span style="font-size: 13px;">s</span>
                 </div>
                 <input type="file" id="srtFileInput" accept=".srt" style="display: none;">
@@ -309,10 +309,10 @@
             
             <div style="display: flex; flex-direction: column; align-items: center; gap: 5px;">
                 <div class="ui-group">
-                    <input type="checkbox" id="ambientToggle"> <label for="ambientToggle">Glow</label>
+                    <input type="checkbox" id="ambientToggle"> <label for="ambientToggle" style="cursor: pointer; user-select: none; margin-left: -4px;">Glow</label>
                 </div>
                 <div id="glowIntensityGroup" style="display: none;">
-                    <input type="range" id="glowSlider" min="1" max="100" value="100" style="width: 70px;" title="Glow Intensity">
+                    <input type="range" id="glowSlider" min="1" max="100" value="100" style="width: 65px;" title="Glow Intensity">
                 </div>
             </div>
 
@@ -849,12 +849,14 @@
             } else if (newOffset > 0) {
                 signSpan.innerText = '+';
                 signSpan.style.color = '#4ade80'; // Green
-                subOffset.value = newOffset;
+                subOffset.value = Number(newOffset.toFixed(2));
             } else {
                 signSpan.innerText = '-';
                 signSpan.style.color = '#ff5555'; // Red
-                subOffset.value = Math.abs(newOffset);
+                subOffset.value = Number(Math.abs(newOffset).toFixed(2));
             }
+            
+            lastInputValue = subOffset.value; // Store internal state for input tracking
 
             // 2. Shift the actual subtitle timing
             const tracks = videoPlayer.textTracks;
@@ -864,13 +866,17 @@
                 const track = tracks[activeIndex];
                 const cues = track.cues;
                 
-                track.mode = 'hidden'; 
+                // Flush the track's internal state to prevent missing "exit" events
+                // which causes cues to become permanently stuck in the activeCues list.
+                track.mode = 'disabled'; 
+                
                 for (let i = 0; i < cues.length; i++) {
                     cues[i].startTime += delta;
                     cues[i].endTime += delta;
                 }
                 currentSyncOffset = newOffset;
                 
+                // Re-enable the track to cleanly re-evaluate the new timings
                 track.mode = 'hidden'; 
                 renderCustomSubtitles({ target: track });
             } else {
@@ -878,21 +884,49 @@
             }
         }
 
-        // Handles the scroll wheel
+        // Hidden feature: double-click the "Sub-Sync:" text to instantly reset to 0
+        document.getElementById('subSyncLabel').addEventListener('dblclick', () => {
+            applySyncOffset(0);
+        });
+
+        // Handles the scroll wheel (Now automatically uses the HTML step attribute, e.g. 0.1)
         subOffset.addEventListener('wheel', function(e) {
             e.preventDefault();
-            let newVal = e.deltaY < 0 ? currentSyncOffset + 0.25 : currentSyncOffset - 0.25;
+            let step = parseFloat(subOffset.step) || 0.1;
+            let newVal = e.deltaY < 0 ? currentSyncOffset + step : currentSyncOffset - step;
             applySyncOffset(newVal);
         });
 
+        let lastInputValue = 0; // State tracker
+
         // Handles manually typing or clicking the up/down arrows inside the box
         subOffset.addEventListener('input', (e) => {
-            let absVal = parseFloat(e.target.value) || 0;
-            // Check the current sign symbol to know if we should treat the typed value as negative
+            let rawNew = parseFloat(e.target.value) || 0;
+            let rawOld = parseFloat(lastInputValue) || 0;
             let isNegative = signSpan.innerText === '-';
-            let newOffset = isNegative ? -absVal : absVal;
+            
+            let diff = rawNew - rawOld;
+            let step = parseFloat(subOffset.step) || 0.1;
+            let newOffset;
+            
+            // If the box changed by exactly 1 step, the user clicked a native spinner arrow.
+            // We apply logical + or - regardless of what absolute value the box is displaying.
+            if (Math.abs(Math.abs(diff) - step) < 0.001) {
+                newOffset = diff > 0 ? currentSyncOffset + step : currentSyncOffset - step;
+            } else {
+                // Otherwise, the user manually typed a number
+                if (rawNew < 0) {
+                    newOffset = rawNew; 
+                } else {
+                    newOffset = isNegative ? -Math.abs(rawNew) : Math.abs(rawNew);
+                }
+            }
+            
+            // Prevent floating-point math drift
+            newOffset = Math.round(newOffset * 100) / 100;
             
             applySyncOffset(newOffset);
+            lastInputValue = subOffset.value;
         });
 
         // Ensure embedded tracks are caught dynamically by the browser 
