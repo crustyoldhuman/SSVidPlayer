@@ -1430,6 +1430,19 @@
             this.dispatchEvent(new Event('input'));
         });
 
+        // Allow scrolling anywhere over the video player to adjust the volume
+        document.addEventListener('wheel', function(e) {
+            // Ignore if the mouse is hovering over the top or bottom UI panels
+            if (controlBar.contains(e.target) || bottomControlBar.contains(e.target)) return;
+            
+            e.preventDefault();
+            e.deltaY < 0 ? volumeSlider.stepUp(5) : volumeSlider.stepDown(5);
+            volumeSlider.dispatchEvent(new Event('input'));
+            
+            // Wake up the UI so the user can see the volume changing
+            resetIdleTimer(e); 
+        }, { passive: false });
+
         btnFit.addEventListener('click', function() {
             if (nativeWidth && nativeHeight) {
                 sizeSlider.value = currentFitScale;
