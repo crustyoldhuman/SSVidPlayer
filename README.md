@@ -27,18 +27,18 @@ All the other bells and whistles are just cherries on top of that core purpose.
 * **300% Audio Amplification:** Bypasses standard browser volume limits using the Web Audio API `GainNode`, allowing you to boost quiet audio tracks up to 3x (300%) their native volume. (works in Firefox, not supported in Chromium)
 * **Smart Window Fitting:** A dedicated **Fit to Page** toggle that automatically calculates your viewport and scales the video to utilize the maximum available screen real estate without clipping.
 * **Advanced Subtitle Engine:**
-  * Drag-and-drop `.srt` support with on-the-fly `.vtt` conversion.
-  * Real-time **Sub-Sync** offset (click or scroll the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond).
+  * Drag-and-drop `.srt` support with on-the-fly `.vtt` conversion
+  * Real-time **Sub-Sync** offset (click or scroll the **+** / **-** to flip the offset direction and fix out-of-sync text by the millisecond)
   * Draggable subtitles (click and move text anywhere on the screen)
-  * Adjustable subtitle font size.
+  * Adjustable subtitle font size
   * Aspect-ratio unlinking (crop top/bottom or left/right independently)
-* **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider (not pictured in above screenshot).
+* **Immersive Ambient Glow:** A performance-friendly, GPU-accelerated "ambilight" effect that maps the exact 1-pixel edges of your cropped video onto the background using CSS masks and blur filters. Includes intensity slider when active.
 * **Broad Media Support:** Plays `.mp4`, `.mkv`, and `.webm` video files, but also doubles as an audio player for `.mp3`, `.wav`, `.ogg`, and `.flac` files. 
-* **Power User Controls:**
-  * Scroll-wheel support for volume, size, and cropping values.
-  * Loop toggling for background media.
-  * Smart mute memory (remembers your exact volume percentage when unmuting).
-  * Auto-hiding, distraction-free UI.
+* **Other Bells & Whistles:**
+  * Scroll-wheel support for volume, size, and cropping values
+  * Loop toggling for background media
+  * Smart mute memory (remembers your exact volume percentage when unmuting)
+  * Auto-hiding, distraction-free UI
 * **100% Local & Private:** Runs entirely in your browser via `URL.createObjectURL`. No servers, no tracking, no uploads.
 
 ## How to Use
@@ -47,7 +47,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 2. Open `SSVidPlayer.html` in your browser of choice (Firefox/Chrome/Edge recommended for RTX VSR).
 3. Drag and drop any `.mp4`, `.mkv`, or `.webm` file into the browser window.
 4. (Optional) Drag and drop an `.srt` file to instantly load subtitles. Adjust timing with **Sub-Sync** controls.
-5. You can drag and drop the video file and `.srt` file at the same time or separately. 
+5. You can drag and drop the video file and `.srt` file at the same time or separately.
 6. `.mp4` FILES ARE HEAVILY SUGGESTED. You may get mixed results with other filetypes depending how they were encoded, but all `.mp4`s should work. 
 
 ## Shortcuts & Controls
@@ -55,9 +55,9 @@ All the other bells and whistles are just cherries on top of that core purpose.
 * **Spacebar:** **Play** / **Pause**
 * **Single Click on player:** **Play** / **Pause**
 * **Arrow Left** / **Right:** Skip backward / forward 5 seconds
-* **Scroll Wheel (over inputs):** Adjust volume, zoom, sync offsets, and cropping pixel by pixel.
-* **Double Click on player:** Open file browser to load new media.
-* **Click & Drag (Subtitles):** Reposition subtitles anywhere on the screen.
+* **Scroll Wheel (over inputs):** Adjust volume, zoom, sync offsets, and cropping pixel by pixel
+* **Double Click on player:** Open file browser to load new media
+* **Click & Drag (Subtitles):** Reposition subtitles anywhere on the screen
 
 ## Known Limitations
 
@@ -68,10 +68,10 @@ All the other bells and whistles are just cherries on top of that core purpose.
 
 ## Technical Stack
 
-* Vanilla HTML5, CSS3, and JavaScript.
-* Utilizes the native HTML5 `<video>` and `<track>` APIs.
-* Canvas API for the ambient lighting effect.
-* File API for local blob handling.
+* Vanilla HTML5, CSS3, and JavaScript
+* Utilizes the native HTML5 `<video>` and `<track>` APIs
+* Canvas API for the ambient lighting effect
+* File API for local blob handling
 
 ---
 *Created with love by [crustyoldhuman](https://github.com/crustyoldhuman)*
