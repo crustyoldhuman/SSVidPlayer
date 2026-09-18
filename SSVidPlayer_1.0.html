@@ -535,6 +535,14 @@
         cropLeft.addEventListener('input', (e) => { if(isLinkedLR) cropRight.value = e.target.value; applyVideoCrop(); });
         cropRight.addEventListener('input', (e) => { if(isLinkedLR) cropLeft.value = e.target.value; applyVideoCrop(); });
 
+        [cropTop, cropBottom, cropLeft, cropRight].forEach(input => {
+            input.addEventListener('wheel', function(e) {
+                e.preventDefault();
+                e.deltaY < 0 ? this.stepUp() : this.stepDown();
+                this.dispatchEvent(new Event('input')); 
+            });
+        });
+
         videoPlayer.addEventListener('seeked', () => {
         if (isAmbientEnabled && !document.fullscreenElement) {
             isFirstFrame = true;
