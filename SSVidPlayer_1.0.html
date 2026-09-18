@@ -544,7 +544,7 @@
         });
 
         videoPlayer.addEventListener('seeked', () => {
-        if (isAmbientEnabled && !document.fullscreenElement) {
+        if (isAmbientEnabled) {
             isFirstFrame = true;
             if (videoPlayer.paused) drawAmbientFrame();
         }
@@ -1038,7 +1038,7 @@
 
         function manageAmbientState() {
             cancelAnimationFrame(ambientAnimId);
-            if (!isAmbientEnabled || document.fullscreenElement) {
+            if (!isAmbientEnabled) {
                 ambientCanvas.classList.add('hidden');
                 ambientCanvas.style.opacity = '';
             } else if (videoPlayer.readyState > 0) {
@@ -1134,7 +1134,7 @@
         }
 
         function drawAmbientLoop() {
-            if (videoPlayer.paused || videoPlayer.ended || !isAmbientEnabled || document.fullscreenElement) return;
+            if (videoPlayer.paused || videoPlayer.ended || !isAmbientEnabled) return;
             drawAmbientFrame();
             ambientAnimId = requestAnimationFrame(drawAmbientLoop);
         }
