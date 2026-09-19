@@ -38,11 +38,12 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
-            transition: opacity 0.4s ease;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
         }
         .controls.hidden {
             opacity: 0;
             pointer-events: none;
+            visibility: hidden;
         }
         #filenameDisplay:empty {
             display: none;
@@ -60,13 +61,14 @@
             align-items: center;
             justify-content: center;
             z-index: 100;
-            transition: opacity 0.4s ease;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
             width: 80%;
             max-width: 900px;
         }
         .bottom-controls.hidden {
             opacity: 0;
             pointer-events: none;
+            visibility: hidden;
         }
         #seekSlider {
             flex-grow: 1;
@@ -131,7 +133,6 @@
             background-color: #555555;
         }
         video {
-            background-color: #111111;
             position: relative;
             z-index: 2; 
         }
@@ -165,12 +166,14 @@
             z-index: 50;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.3s ease, transform 0.2s ease;
+            visibility: hidden;
+            transition: opacity 0.3s ease, transform 0.2s ease, visibility 0.3s ease;
             text-shadow: 0px 4px 12px rgba(0, 0, 0, 0.8);
         }
         .play-overlay.visible {
             opacity: 1;
             pointer-events: auto;
+            visibility: visible;
         }
         .play-overlay.ready {
             cursor: pointer;
