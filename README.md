@@ -7,6 +7,11 @@ A lightweight, zero-dependency HTML5 video player designed to apply native brows
 <br><br>
 <p align="center"><img width="900" alt="VidPlayingScreenie" src="https://github.com/user-attachments/assets/7c018495-d111-4a03-8994-733c2f91ec5d" /></p>
 
+<h3 align="center">
+  <a href="https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html">Try SSVidPlayer in your browser right now, no download required. Click here!</a>
+</h3>
+
+
 ## Why This Exists
 
 Trying to play upscaled local videos on Windows the way streaming videos upscale is a sh**show nightmare. Getting your $1000+ GPU to apply native AI upscaling (like NVIDIA RTX VSR) to a local file should be a basic feature, not a complex puzzle requiring bloated media players or obscure plugins that don't even end up working half the time.
