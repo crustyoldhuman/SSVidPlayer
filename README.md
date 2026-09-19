@@ -5,7 +5,7 @@
 
 A lightweight, zero-dependency HTML5 video player designed to apply native browser AI video upscaling (like NVIDIA RTX Video Super Resolution) to your local `.mp4` files, all while remaining entirely local and privacy-respecting.
 <br><br>
-<p align="center"><img width="900" alt="DefaultPageScreenie" src="https://github.com/user-attachments/assets/6696d7c6-3e21-4b2c-abbe-9e9000d28149" /></p>
+<p align="center"><img width="1200" alt="DefaultPageScreenie" src="https://github.com/user-attachments/assets/e202e9f3-70e8-4430-86aa-f9cfbe426025" /></p>
 
 ## Why This Exists
 
