@@ -50,7 +50,7 @@ All the other bells and whistles are just cherries on top of that core purpose.
 5. You can drag and drop the video file and `.srt` file at the same time or separately.
 6. `.mp4` FILES ARE HEAVILY SUGGESTED. You may get mixed results with other filetypes depending how they were encoded, but all `.mp4`s should work. 
 
-* ***Note*** * the file "SSVideoPlayer.html" listed above in the project resources is un-versioned because I will ALWAYS keep that HTML file updated the the most recent version of SSVideoPlayer. Since the player is purely HTML, this will allow you to bookmark this link here: https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html to your browser so you can always be using the most recent version of SSVidPlayer. This is just meant as an alternative to downloading the standalone HTML file on the releases page. 
+** ***NOTE*** ** the file "SSVideoPlayer.html" listed above in the project resources is un-versioned because I will ALWAYS keep that HTML file updated the the most recent version of SSVideoPlayer. Since the player is purely HTML, this will allow you to bookmark this link here: https://crustyoldhuman.github.io/SSVidPlayer/SSVidPlayer.html to your browser so you can always be using the most recent version of SSVidPlayer. This is just meant as an alternative to downloading the standalone HTML file on the releases page. 
 
 ## Shortcuts & Controls
 
