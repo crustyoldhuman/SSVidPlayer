@@ -96,32 +96,19 @@ Rapt acts as a clean, brutalist viewing experience for your local media. Load up
 ** ***NOTE*** ** the file "RaptVideoPlayer.html" listed above in the project resources is un-versioned because I will ALWAYS keep that HTML file updated the the most recent version of Rapt Player. Since the player is purely HTML, this will allow you to bookmark this link here: https://crustyoldhuman.github.io/Rapt/Rapt.html to your browser so you can always have easy access anywhere on any computer to a video player that supports Super Sampling.
 
 ## Shortcuts & Controls
-* **Spacebar** / **K:** **Play** / **Pause**
-
+- **Spacebar** / **K:** **Play** / **Pause**
 - **Single Click on player:** **Play** / **Pause**
-
 - **Arrow Left** / **Right:** Skip backward / forward 5 seconds
-
 - **J** / **L:** Seek backward / forward 10 seconds
-
 - **Arrow Up** / **Down:** Increase / Decrease volume
-
 - **M:** Toggle Mute
-
 - **F:** Toggle Fullscreen
-
 - **C:** Toggle Captions / Subtitles
-
 - **R:** Toggle Repeat / Loop Mode
-
 - **N:** Next Track (if playlist is active)
-
 - **P:** Previous Track (if playlist is active)
-
 - **T:** Toggle Fit to Page
-
 - **Scroll Wheel (over inputs):** Adjust volume, zoom, sync offsets, and cropping pixel by pixel
-
 - **Click & Drag (Subtitles):** Reposition subtitles anywhere on the screen
 
 ## Known Limitations
