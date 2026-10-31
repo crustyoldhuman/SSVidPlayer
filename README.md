@@ -28,7 +28,7 @@ Designed specifically for dark-room viewing, the green-centric color palette is 
 
 It also overhauls how local video text is handled. Instead of rasterized, static text like traditional players, Rapt extracts subtitle tracks and uses modern CSS rendering. This makes your subtitles fully scalable, draggable, with complete on-the-fly timestamp syncing to instantly fix poorly timed subtitles. 
 
-Rapt acts as a clean, brutalist viewing experience for your local media. Load up your file, and enjoy. 
+Rapt is a clean, brutalist viewing experience for your local media. Load up your file, and enjoy. 
 <br><br>
 
 ## Other Bells & Whistles
